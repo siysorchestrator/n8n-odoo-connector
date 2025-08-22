@@ -2,7 +2,7 @@
 FROM python:3.11-slim-bookworm
 
 # Set the working directory in the container
-WORKDIR /app
+WORKDIR /
 
 # Copy the requirements file first to leverage Docker cache
 COPY requirements.txt .
@@ -21,4 +21,4 @@ ENV PYTHONPATH=/app
 
 # Run the application with Uvicorn, optimized for production
 # Using 1 worker per core is best practice in containers. Render will scale horizontally.
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
