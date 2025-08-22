@@ -1,0 +1,13 @@
+# render.yaml
+services:
+  - type: web
+    name: n8n-odoo-connector
+    env: docker
+    plan: starter
+    dockerfilePath: Dockerfile
+    envVars:
+      - key: PYTHONPATH
+        value: /app
+      # You will add your secrets (XMLRPC_SERVER_URL, etc.) in the Render dashboard
+    numInstances: 1
+    healthCheckPath: /
