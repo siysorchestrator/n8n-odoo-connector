@@ -6,6 +6,12 @@ class PartnerCreate(BaseModel):
     name: str
     phone: Optional[str]
     email: Optional[str]
+    street: Optional[str]
+    zip: Optional[str]
+    city: Optional[str]
+    state_id: Optional[str]
+    country_id: 156
+
 
 class PartnerUpdate(BaseModel):
     name: Optional[str]

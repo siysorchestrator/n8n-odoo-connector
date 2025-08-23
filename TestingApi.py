@@ -1,10 +1,13 @@
 import xmlrpc.client
+import os
+from dotenv import load_dotenv
 
-url = "https://janssenlearing.odoo.com/"
-db = "janssenlearing"
-username = 'atsuro095@gmail.com'
-password = 'Suprise1835!'
-key = '8df6f9649dc0e69fe88517c7c7bb89daf8baeb22'
+load_dotenv()
+
+url = os.getenv("XMLRPC_SERVER_URL"),
+db = os.getenv("XMLRPC_DB_NAME"),
+username = os.getenv("XMLRPC_USERNAME"),
+password = os.getenv("XMLRPC_PASSWORD")
 
 # --- 1. Authenticate user ---
 common = xmlrpc.client.ServerProxy(f"{url}/xmlrpc/2/common")
@@ -17,48 +20,32 @@ if not uid:
 # --- 2. Create model proxy (for object operations) ---
 models = xmlrpc.client.ServerProxy(f"{url}/xmlrpc/2/object")
 
-# --- 3. Example: Search for partners (clients) ---
-partners = models.execute_kw(
-    db, uid, password,
-    "res.partner", "search_read",
-    [[["is_company", "=", False]]],    # Domain filter
-    {"fields": ["name", "email"], "limit": 5}
-)
-print("Partners:", partners)
+# fields = models.execute_kw(
+#     db, uid, password,
+#     'res.country', 'fields_get',
+#     [], {'attributes': ['string', 'help', 'type']}
+# )
 
-# --- 4. Example: Create a new client ---
-new_partner_id = models.execute_kw(
-    db, uid, password,
-    "res.partner", "create",
-    [{
-        "name": "New Client from Python",
-        "email": "client@example.com",
-        "phone": "+521234567890",
-    }]
-)
-print("Created Partner ID:", new_partner_id)
+# with open("res_country_fields.txt", "w", encoding="utf-8") as f:
+#     for field, info in fields.items():
+#         f.write(f"Field: {field}\n")
+#         f.write(f"  Label: {info.get('string')}\n")
+#         f.write(f"  Type: {info.get('type')}\n")
+#         f.write(f"  Help: {info.get('help')}\n")
+#         f.write("----\n")
 
-# --- 5. Example: Update a record ---
-models.execute_kw(
-    db, uid, password,
-    "res.partner", "write",
-    [[new_partner_id], {"phone": "+529876543210"}]
-)
-print("Updated Partner phone!")
 
-# --- 6. Example: Create a repair order (if you have repair module) ---
-new_repair_id = models.execute_kw(
+# Fetch states only for Mexico (country_id = 156)
+states = models.execute_kw(
     db, uid, password,
-    "repair.order", "create",
-    [{
-        "name": "REP-TEST-001",                # custom reference
-        "partner_id": new_partner_id,          # link to your client
-        "product_id": 1,                       # replace with a valid product_id
-        "product_qty": 1,
-        "product_uom": 1,                      # replace with a valid UoM ID
-        "internal_notes": "Repair created via XML-RPC",
-        "company_id": 1,                       # if needed
-        "state": "draft"                       # usually default, but can be set
-    }]
+    'res.country.state', 'search_read',
+    [[['country_id', '=', 156]]],  # domain filter
+    {'fields': ['id', 'name']}  # only fetch id and name
 )
-print("Created Repair Order ID:", new_repair_id)
+
+# Create dictionary: state_id -> state_name
+mexico_states = {state['id']: state['name'] for state in states}
+
+# Print mapping
+for state_id, state_name in mexico_states.items():
+    print(f"{state_id}: {state_name}")

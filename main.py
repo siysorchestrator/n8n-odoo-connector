@@ -46,12 +46,12 @@ def list_partners(partner_id: int):
 
 @app.post("/partners")
 def create_partner(data: PartnerCreate):
-    partner_id = odoo.create("res.partner", data.dict())
+    partner_id = odoo.create("res.partner", data.model_dump())
     return {"partner_id": partner_id}
 
 @app.put("/partners/{partner_id}")
 def update_partner(partner_id: int, data: PartnerUpdate):
-    odoo.write("res.partner", [partner_id], data.dict(exclude_unset=True))
+    odoo.write("res.partner", [partner_id], data.model_dump(exclude_unset=True))
     return {"updated": partner_id}
 
 @app.delete("/partners/{partner_id}")

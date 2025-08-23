@@ -1,0 +1,127 @@
+Field: id
+  Label: ID
+  Type: integer
+  Help: None
+----
+Field: display_name
+  Label: Display Name
+  Type: char
+  Help: None
+----
+Field: name
+  Label: Country Name
+  Type: char
+  Help: None
+----
+Field: code
+  Label: Country Code
+  Type: char
+  Help: The ISO country code in two chars. 
+You can use this field for quick search.
+----
+Field: address_format
+  Label: Layout in Reports
+  Type: text
+  Help: Display format to use for addresses belonging to this country.
+
+You can use python-style string pattern with all the fields of the address (for example, use '%(street)s' to display the field 'street') plus
+%(state_name)s: the name of the state
+%(state_code)s: the code of the state
+%(country_name)s: the name of the country
+%(country_code)s: the code of the country
+----
+Field: address_view_id
+  Label: Input View
+  Type: many2one
+  Help: Use this field if you want to replace the usual way to encode a complete address. Note that the address_format field is used to modify the way to display addresses (in reports for example), while this field is used to modify the input form for addresses.
+----
+Field: currency_id
+  Label: Currency
+  Type: many2one
+  Help: None
+----
+Field: image_url
+  Label: Flag
+  Type: char
+  Help: Url of static flag image
+----
+Field: phone_code
+  Label: Country Calling Code
+  Type: integer
+  Help: None
+----
+Field: country_group_ids
+  Label: Country Groups
+  Type: many2many
+  Help: None
+----
+Field: country_group_codes
+  Label: Country Group Codes
+  Type: json
+  Help: None
+----
+Field: state_ids
+  Label: States
+  Type: one2many
+  Help: None
+----
+Field: name_position
+  Label: Customer Name Position
+  Type: selection
+  Help: Determines where the customer/company name should be placed, i.e. after or before the address.
+----
+Field: vat_label
+  Label: Vat Label
+  Type: char
+  Help: Use this field if you want to change vat label.
+----
+Field: state_required
+  Label: State Required
+  Type: boolean
+  Help: None
+----
+Field: zip_required
+  Label: Zip Required
+  Type: boolean
+  Help: None
+----
+Field: create_uid
+  Label: Created by
+  Type: many2one
+  Help: None
+----
+Field: create_date
+  Label: Created on
+  Type: datetime
+  Help: None
+----
+Field: write_uid
+  Label: Last Updated by
+  Type: many2one
+  Help: None
+----
+Field: write_date
+  Label: Last Updated on
+  Type: datetime
+  Help: None
+----
+Field: is_stripe_supported_country
+  Label: Is Stripe Supported Country
+  Type: boolean
+  Help: None
+----
+Field: has_foreign_fiscal_position
+  Label: Has Foreign Fiscal Position
+  Type: boolean
+  Help: None
+----
+Field: l10n_mx_edi_code
+  Label: Code MX
+  Type: char
+  Help: Country code defined by the SAT in the catalog to CFDI version 4.0 and new complements. Will be used in the CFDI to indicate the country reference.
+----
+Field: demonym
+  Label: Demonym
+  Type: char
+  Help: Adjective for relationship between a person and a country.
+----
