@@ -80,12 +80,12 @@ def list_partners(repair_id: int):
 
 @app.post("/repairs")
 def create_repair(data: RepairCreate):
-    repair_id = odoo.create("repair.order", data.dict())
+    repair_id = odoo.create("repair.order", data.model_dump())
     return {"repair_id": repair_id}
 
 @app.put("/repairs/{repair_id}")
 def update_repair(repair_id: int, data: RepairUpdate):
-    odoo.write("repair.order", [repair_id], data.dict(exclude_unset=True))
+    odoo.write("repair.order", [repair_id], data.model_dump(exclude_unset=True))
     return {"updated": repair_id}
 
 @app.delete("/repairs/{repair_id}")
@@ -106,12 +106,12 @@ def list_sales(limit: int = 10, partner_id: int | None = Query(None)):
 
 @app.post("/sales")
 def create_sale(data: SaleCreate):
-    sale_id = odoo.create("sale.order", data.dict())
+    sale_id = odoo.create("sale.order", data.model_dump())
     return {"sale_id": sale_id}
 
 @app.put("/sales/{sale_id}")
 def update_sale(sale_id: int, data: SaleUpdate):
-    odoo.write("sale.order", [sale_id], data.dict(exclude_unset=True))
+    odoo.write("sale.order", [sale_id], data.model_dump(exclude_unset=True))
     return {"updated": sale_id}
 
 @app.delete("/sales/{sale_id}")
@@ -134,12 +134,12 @@ def list_equipos(limit: int = 10, poseedor: int | None = Query(None), serie: str
 
 @app.post("/equipos")
 def create_equipos(data: EquipoCreate):
-    equipo_id = odoo.create("x_equipos_medicos", data.dict())
-    return {"product_id": equipo_id}
+    equipo_id = odoo.create("x_equipos_medicos", data.model_dump())
+    return {"id": equipo_id}
 
 @app.put("/equipos/{equipo_id}")
 def update_equipos(equipo_id: int, data: EquipoUpdate):
-    odoo.write("x_equipos_medicos", [equipo_id], data.dict(exclude_unset=True))
+    odoo.write("x_equipos_medicos", [equipo_id], data.model_dump(exclude_unset=True))
     return {"updated": equipo_id}
 
 @app.delete("/equipos/{equipo_id}")
