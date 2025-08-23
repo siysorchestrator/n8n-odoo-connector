@@ -10,13 +10,18 @@ class PartnerCreate(BaseModel):
     zip: Optional[str]
     city: Optional[str]
     state_id: Optional[str]
-    country_id: 156
+    country_id: Optional[str]
 
 
 class PartnerUpdate(BaseModel):
     name: Optional[str]
     phone: Optional[str]
     email: Optional[str]
+    street: Optional[str]
+    zip: Optional[str]
+    city: Optional[str]
+    state_id: Optional[str]
+    country_id: Optional[str]
 
 # --- Repair Order ---
 class RepairCreate(BaseModel):
