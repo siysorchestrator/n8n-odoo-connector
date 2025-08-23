@@ -52,11 +52,11 @@ class EquipoCreate(BaseModel):
     x_studio_numero_de_serie: Optional[str] = None
     x_studio_marca: Optional[str] = None
     x_studio_modelo: Optional[str] = None
-    x_studio_poseedor: Optional[str]
+    x_studio_poseedor: Optional[int]
 
 class EquipoUpdate(BaseModel):
     x_name: str
     x_studio_numero_de_serie: Optional[str] = None
     x_studio_marca: Optional[str] = None
     x_studio_modelo: Optional[str] = None
-    x_studio_poseedor: Optional[str]
+    x_studio_poseedor: Optional[int]
