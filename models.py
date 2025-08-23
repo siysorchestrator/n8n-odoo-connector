@@ -50,13 +50,13 @@ class SaleUpdate(BaseModel):
 class EquipoCreate(BaseModel):
     x_name: str
     x_studio_numero_de_serie: Optional[str] = None
-    x_studio_marca: Optional[str] = None
-    x_studio_modelo: Optional[str] = None
-    x_studio_poseedor: Optional[int]
+    x_studio_marca: Optional[str] = "Generico"
+    x_studio_modelo: Optional[str] = "Desconocido"
+    x_studio_poseedor: Optional[int] = 0
 
 class EquipoUpdate(BaseModel):
     x_name: str
     x_studio_numero_de_serie: Optional[str] = None
-    x_studio_marca: Optional[str] = None
-    x_studio_modelo: Optional[str] = None
-    x_studio_poseedor: Optional[int]
+    x_studio_marca: Optional[str] = "Generico"
+    x_studio_modelo: Optional[str] = "Desconocido"
+    x_studio_poseedor: Optional[int] = 0
