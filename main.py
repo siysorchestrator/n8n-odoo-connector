@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Query, HTTPException
 from typing import List
 from odoo_client import OdooClient
-from models import PartnerCreate, PartnerUpdate, RepairCreate, RepairUpdate, SaleCreate, SaleUpdate, ProductCreate, ProductUpdate
+from models import PartnerCreate, PartnerUpdate, RepairCreate, RepairUpdate, SaleCreate, SaleUpdate, EquipoCreate,EquipoUpdate
 import os
 from dotenv import load_dotenv
 
@@ -119,28 +119,30 @@ def delete_sale(sale_id: int):
     odoo.unlink("sale.order", [sale_id])
     return {"deleted": sale_id}
 
-# ------------------ PRODUCTOS/EQUIPOS ------------------
-@app.get("/products")
-def list_products(limit: int = 10, partner_id: int | None = Query(None)):
+# ------------------ EQUIPOS ------------------
+@app.get("/equipos")
+def list_equipos(limit: int = 10, poseedor: int | None = Query(None), serie: str | None = Query(None)):
     domain = []
-    if partner_id:
-        domain.append(('partner_id', '=', partner_id))
-    result = odoo.search_read("product.product", [], ["id", "name", "list_price", "qty_available"], limit)
+    if poseedor:
+        domain.append(('x_studio_poseedor', '=', poseedor))
+    if serie:
+        domain.append(('x_studio_numero_de_serie', '=', serie))
+    result = odoo.search_read("x_equipos_medicos", domain, ["id", "x_name", "x_studio_poseedor", "x_studio_numero_de_serie"], limit)
     if not result:
         return result
     return result
 
-@app.post("/products")
-def create_product(data: ProductCreate):
-    product_id = odoo.create("product.product", data.dict())
-    return {"product_id": product_id}
+@app.post("/equipos")
+def create_equipos(data: EquipoCreate):
+    equipo_id = odoo.create("x_equipos_medicos", data.dict())
+    return {"product_id": equipo_id}
 
-@app.put("/products/{product_id}")
-def update_product(product_id: int, data: ProductUpdate):
-    odoo.write("product.product", [product_id], data.dict(exclude_unset=True))
-    return {"updated": product_id}
+@app.put("/equipos/{equipo_id}")
+def update_equipos(equipo_id: int, data: EquipoUpdate):
+    odoo.write("x_equipos_medicos", [equipo_id], data.dict(exclude_unset=True))
+    return {"updated": equipo_id}
 
-@app.delete("/products/{product_id}")
-def delete_product(product_id: int):
-    odoo.unlink("product.product", [product_id])
-    return {"deleted": product_id}
+@app.delete("/equipos/{equipo_id}")
+def delete_equipos(equipo_id: int):
+    odoo.unlink("x_equipos_medicos", [equipo_id])
+    return {"deleted": equipo_id}

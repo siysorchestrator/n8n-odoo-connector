@@ -32,7 +32,10 @@ class RepairCreate(BaseModel):
     internal_notes: Optional[str]
 
 class RepairUpdate(BaseModel):
-    product_qty: Optional[float]
+    partner_id: int
+    product_id: int
+    product_qty: float
+    product_uom: int
     internal_notes: Optional[str]
 
 # --- Sales Quote ---
@@ -43,24 +46,17 @@ class SaleCreate(BaseModel):
 class SaleUpdate(BaseModel):
     order_line: Optional[List[dict]]
 
-# --- Product / Inventory ---
-class ProductCreate(BaseModel):
+# --- Equipos Medicos ---
+class EquipoCreate(BaseModel):
     name: str
-    list_price: float
-    qty_available: Optional[float] = 0
+    x_studio_numero_de_serie: Optional[str] = None
+    x_studio_marca: Optional[str] = None
+    x_studio_modelo: Optional[str] = None
+    x_studio_poseedor: Optional[str]
 
-class ProductUpdate(BaseModel):
-    name: Optional[str]
-    list_price: Optional[float]
-    qty_available: Optional[float]
-
-# --- Product / Inventory ---
-class ProductCreate(BaseModel):
+class EquipoUpdate(BaseModel):
     name: str
-    list_price: float
-    qty_available: Optional[float] = 0
-
-class ProductUpdate(BaseModel):
-    name: Optional[str]
-    list_price: Optional[float]
-    qty_available: Optional[float]
+    x_studio_numero_de_serie: Optional[str] = None
+    x_studio_marca: Optional[str] = None
+    x_studio_modelo: Optional[str] = None
+    x_studio_poseedor: Optional[str]
