@@ -3,8 +3,11 @@ from typing import List
 from odoo_client import OdooClient
 from models import PartnerCreate, PartnerUpdate, RepairCreate, RepairUpdate, SaleCreate, SaleUpdate, ProductCreate, ProductUpdate
 import os
+from dotenv import load_dotenv
 
+load_dotenv()
 app = FastAPI(title="Odoo Proxy API")
+
 
 odoo = OdooClient(
     url = os.getenv("XMLRPC_SERVER_URL"),
@@ -29,7 +32,7 @@ def list_partners(limit: int = 10, phone: str | None = Query(None)):
     )
 
     if not result:
-        raise HTTPException(status_code=404, detail="No partners found")
+        return result
 
     return result
 
@@ -64,7 +67,7 @@ def list_repairs(limit: int = 10, partner_id: int | None = Query(None)):
         domain.append(('partner_id', '=', partner_id))
     result = odoo.search_read("repair.order", domain, ["id", "partner_id", "product_id", "product_qty", "internal_notes"], limit)
     if not result:
-        raise HTTPException(status_code=404, detail="No partners found")
+        return result
     return result
 
 @app.get("/repairs/{repair_id}")
@@ -98,7 +101,7 @@ def list_sales(limit: int = 10, partner_id: int | None = Query(None)):
         domain.append(('partner_id', '=', partner_id))  
     result = odoo.search_read("sale.order", domain, ["id", "partner_id", "order_line"], limit)
     if not result:
-        raise HTTPException(status_code=404, detail="No partners found")
+        return result
     return result
 
 @app.post("/sales")
@@ -124,7 +127,7 @@ def list_products(limit: int = 10, partner_id: int | None = Query(None)):
         domain.append(('partner_id', '=', partner_id))
     result = odoo.search_read("product.product", [], ["id", "name", "list_price", "qty_available"], limit)
     if not result:
-        raise HTTPException(status_code=404, detail="No partners found")
+        return result
     return result
 
 @app.post("/products")
