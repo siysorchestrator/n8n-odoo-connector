@@ -4,7 +4,7 @@ from typing import Optional, List
 # --- Partner ---
 class PartnerCreate(BaseModel):
     name: str
-    phone: Optional[str]
+    phone_sanitized: Optional[str]
     email: Optional[str]
     street: Optional[str]
     zip: Optional[str]
@@ -15,7 +15,7 @@ class PartnerCreate(BaseModel):
 
 class PartnerUpdate(BaseModel):
     name: Optional[str]
-    phone: Optional[str]
+    phone_sanitized: Optional[str]
     email: Optional[str]
     street: Optional[str]
     zip: Optional[str]

@@ -22,12 +22,12 @@ odoo = OdooClient(
 def list_partners(limit: int = 10, phone: str | None = Query(None)):
     domain = []
     if phone:
-        domain.append(("phone", "=", phone))
+        domain.append(("phone_sanitized", "=", phone))
 
     result = odoo.search_read(
         "res.partner",
         domain,
-        ["id", "name", "phone", "email", "street", "city", "state_id", "zip"],
+        ["id", "name", "phone_sanitized", "email", "street", "city", "state_id", "zip"],
         limit
     )
     if not result:
