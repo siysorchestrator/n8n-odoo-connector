@@ -27,13 +27,11 @@ def list_partners(limit: int = 10, phone: str | None = Query(None)):
     result = odoo.search_read(
         "res.partner",
         domain,
-        ["id", "name", "phone", "email"],
+        ["id", "name", "phone", "email", "street", "city", "state_id", "zip"],
         limit
     )
-
     if not result:
         return result
-
     return result
 
 @app.get("/partners/{partner_id}")
