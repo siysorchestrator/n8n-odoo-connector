@@ -12,7 +12,6 @@ class PartnerCreate(BaseModel):
     state_id: Optional[str]
     country_id: Optional[str]
 
-
 class PartnerUpdate(BaseModel):
     name: Optional[str]
     phone_sanitized: Optional[str]
@@ -23,40 +22,36 @@ class PartnerUpdate(BaseModel):
     state_id: Optional[str]
     country_id: Optional[str]
 
-# --- Repair Order ---
-class RepairCreate(BaseModel):
-    partner_id: int
-    product_id: int
-    product_qty: float
-    product_uom: int
-    internal_notes: Optional[str]
+# --- Pre-Orden ---
+class PreOrderCreate(BaseModel):
+    x_name: Optional[str]
+    x_studio_cliente: int
+    x_studio_equipo_mdico: Optional[int]
+    x_studio_descripcion_de_servicio: Optional[str]
+    x_studio_tipo_de_servicio: Optional[str]
 
-class RepairUpdate(BaseModel):
-    partner_id: int
-    product_id: int
-    product_qty: float
-    product_uom: int
-    internal_notes: Optional[str]
-
-# --- Sales Quote ---
-class SaleCreate(BaseModel):
-    partner_id: int
-    order_line: List[dict]  # [{'product_id': int, 'product_uom_qty': float, 'price_unit': float}]
-
-class SaleUpdate(BaseModel):
-    order_line: Optional[List[dict]]
+class PreOrderUpdate(BaseModel):
+    x_name: Optional[str]
+    x_studio_cliente: int
+    x_studio_equipo_mdico: Optional[int]
+    x_studio_descripcion_de_servicio: Optional[str]
+    x_studio_tipo_de_servicio: Optional[str]
 
 # --- Equipos Medicos ---
 class EquipoCreate(BaseModel):
     x_name: str
     x_studio_numero_de_serie: Optional[str] = "Desconocido"
-    x_studio_marca: Optional[str] = "Generico"
-    x_studio_modelo: Optional[str] = "Desconocido"
+    x_studio_clasificacin: Optional[str] = ""
+    x_studio_marca_equipo: Optional[int] = 1
+    x_studio_modelo_equipo: Optional[int] = 1
     x_studio_poseedor: Optional[int] = 0
+    x_studio_propietario: Optional[int] = 0
 
 class EquipoUpdate(BaseModel):
-    x_name: str
+    x_name: Optional[str]
     x_studio_numero_de_serie: Optional[str] = "Desconocido"
-    x_studio_marca: Optional[str] = "Generico"
-    x_studio_modelo: Optional[str] = "Desconocido"
+    x_studio_clasificacin: Optional[str] = ""
+    x_studio_marca_equipo: Optional[int] = 1
+    x_studio_modelo_equipo: Optional[int] = 1
     x_studio_poseedor: Optional[int] = 0
+    x_studio_propietario: Optional[int] = 0
