@@ -108,21 +108,35 @@ if not all([N8N_WEBHOOK_URL, ODOO_WEBHOOK_URL, WHATSAPP_VERIFY_TOKEN]):
 # Create an asynchronous HTTP client
 client = httpx.AsyncClient(timeout=10.0)
 
-async def forward_webhook(url: str, data: dict):
+async def forward_webhook(url: str, data: dict, signature: str | None):
     """
-    Asynchronously sends the webhook data to the specified URL.
+    Asynchronously sends the webhook data to the specified URL
+    and includes the X-Hub-Signature-256 header for Odoo.
     """
     try:
+        # Start with base headers
         headers = {'Content-Type': 'application/json'}
-        response = await client.post(url, json=data, headers=headers)
+        
+        # Check if this is the Odoo request
         is_odoo_request = ODOO_WEBHOOK_URL and ODOO_WEBHOOK_URL in url
+
+        # If it is Odoo AND we have a signature, add it to the headers
+        if is_odoo_request and signature:
+            headers['X-Hub-Signature-256'] = signature
+            print(f"Forwarding to Odoo with signature...")
+        elif is_odoo_request:
+            print(f"Warning: Forwarding to Odoo *without* signature.")
+
+        response = await client.post(url, json=data, headers=headers)
         
         if is_odoo_request:
+            # --- Detailed Odoo Response (Same as before) ---
             print(f"--- Full Response from Odoo ({url}) ---")
             print(f"Status Code: {response.status_code}")
-            print(f"Response Body: {response.text}")
+            print(f"Response Body: {response.text}") 
             print("------------------------------------------")
         else:
+            # --- Standard n8n Response (Same as before) ---
             print(f"Forwarded to {url}: Status {response.status_code}")
 
     except httpx.RequestError as e:
