@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Query, HTTPException, Request, Response, BackgroundTasks
+from fastapi import FastAPI, Header, Query, HTTPException, Request, Response, BackgroundTasks
 from typing import List
 from odoo_client import OdooClient
 from models import PartnerCreate, PartnerUpdate, EquipoCreate, EquipoUpdate, PreOrderCreate, PreOrderUpdate
@@ -169,18 +169,20 @@ async def verify_webhook(
 @app.post("/webhook")
 async def receive_webhook(
     request: Request,
-    background_tasks: BackgroundTasks
+    background_tasks: BackgroundTasks,
+    # This is the "FastAPI" way to grab the specific header
+    x_hub_signature_256: str | None = Header(None, alias="X-Hub-Signature-256"),
+    x_hub_signature: str | None = Header(None, alias="X-Hub-Signature")
 ):
     """
     Receives incoming messages from WhatsApp and forwards them
-    using background tasks.
+    WITH THE SIGNATURE HEADER to Odoo.
     """
-    print("POST request received (incoming message).")
     data = await request.json()
 
-    # Add the forwarding tasks to the background
-    background_tasks.add_task(forward_webhook, N8N_WEBHOOK_URL, data)
-    background_tasks.add_task(forward_webhook, ODOO_WEBHOOK_URL, data)
+    # Pass the signature to the background tasks
+    # The n8n call will ignore it, the Odoo call will use it.
+    background_tasks.add_task(forward_webhook, N8N_WEBHOOK_URL, data, x_hub_signature_256)
+    background_tasks.add_task(forward_webhook, ODOO_WEBHOOK_URL, data, x_hub_signature_256)
 
-    # Return 200 OK to WhatsApp
     return {"status": "received"}
