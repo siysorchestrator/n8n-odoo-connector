@@ -1,9 +1,10 @@
-from fastapi import FastAPI, Query, HTTPException
+from fastapi import FastAPI, Query, HTTPException, Request, Response, BackgroundTasks
 from typing import List
 from odoo_client import OdooClient
 from models import PartnerCreate, PartnerUpdate, EquipoCreate, EquipoUpdate, PreOrderCreate, PreOrderUpdate
 import os
 from dotenv import load_dotenv
+import httpx
 
 load_dotenv()
 app = FastAPI(title="Odoo Proxy API")
@@ -92,3 +93,77 @@ def create_equipos(data: EquipoCreate):
 def update_equipos(equipo_id: int, data: EquipoUpdate):
     odoo.write("x_equipo_medico", [equipo_id], data.model_dump(exclude_unset=True))
     return {"updated": equipo_id}
+
+#WHATSAPP CALLS (MITM)
+
+
+# --- CONFIGURATION ---
+# Set these as environment variables
+N8N_WEBHOOK_URL = os.environ.get("https://n8n.siysmedicalmx.com/webhook/meta_hook")
+ODOO_WEBHOOK_URL = os.environ.get("https://siys-care.odoo.com/whatsapp/webhook")
+WHATSAPP_VERIFY_TOKEN = os.environ.get("ZhhDMXZ4")
+
+# Basic check to ensure config is loaded
+if not all([N8N_WEBHOOK_URL, ODOO_WEBHOOK_URL, WHATSAPP_VERIFY_TOKEN]):
+    print("FATAL ERROR: Environment variables are not set.")
+    # In a real app, you might want to exit or raise an error
+    # For this example, we'll just print a warning.
+
+# Create an asynchronous HTTP client
+# We use a context-managed client for better performance
+client = httpx.AsyncClient(timeout=10.0)
+
+async def forward_webhook(url: str, data: dict):
+    """
+    Asynchronously sends the webhook data to the specified URL.
+    """
+    try:
+        headers = {'Content-Type': 'application/json'}
+        response = await client.post(url, json=data, headers=headers)
+        print(f"Forwarded to {url}: Status {response.status_code}")
+    except httpx.RequestError as e:
+        print(f"Error forwarding to {url}: {e}")
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """
+    Cleanly close the httpx client when the app shuts down.
+    """
+    await client.aclose()
+
+@app.get("/webhook")
+async def verify_webhook(
+    mode: str = Query(..., alias="hub.mode"),
+    token: str = Query(..., alias="hub.verify_token"),
+    challenge: str = Query(..., alias="hub.challenge")
+):
+    """
+    Handles the WhatsApp Webhook Verification Challenge.
+    """
+    print("GET request received for verification.")
+    if mode == 'subscribe' and token == WHATSAPP_VERIFY_TOKEN:
+        print("Verification successful!")
+        return Response(content=challenge, media_type="text/plain")
+    else:
+        print(f"Verification failed. Token: {token} | Mode: {mode}")
+        raise HTTPException(status_code=403, detail="Verification token mismatch")
+
+@app.post("/webhook")
+async def receive_webhook(
+    request: Request,
+    background_tasks: BackgroundTasks
+):
+    """
+    Receives incoming messages from WhatsApp and forwards them
+    using background tasks.
+    """
+    print("POST request received (incoming message).")
+    data = await request.json()
+
+    # Add the forwarding tasks to the background
+    # This lets us return 200 OK immediately
+    background_tasks.add_task(forward_webhook, N8N_WEBHOOK_URL, data)
+    background_tasks.add_task(forward_webhook, ODOO_WEBHOOK_URL, data)
+
+    # Return 200 OK to WhatsApp
+    return {"status": "received"}
