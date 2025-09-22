@@ -94,7 +94,8 @@ def update_equipos(equipo_id: int, data: EquipoUpdate):
     odoo.write("x_equipo_medico", [equipo_id], data.model_dump(exclude_unset=True))
     return {"updated": equipo_id}
 
-#WHATSAPP CALLS (MITM)
+
+##########WHATSAPP CALLS (MITM)#################
 
 
 # --- CONFIGURATION ---
@@ -120,7 +121,19 @@ async def forward_webhook(url: str, data: dict):
     try:
         headers = {'Content-Type': 'application/json'}
         response = await client.post(url, json=data, headers=headers)
-        print(f"Forwarded to {url}: Status {response.status_code}")
+         # Check if this is the Odoo request
+        is_odoo_request = ODOO_WEBHOOK_URL and ODOO_WEBHOOK_URL in url
+        
+        if is_odoo_request:
+            # --- Detailed Odoo Response ---
+            print(f"--- Full Response from Odoo ({url}) ---")
+            print(f"Status Code: {response.status_code}")
+            print(f"Response Body: {response.text}") # <-- This prints the full response
+            print("------------------------------------------")
+        else:
+            # --- Standard n8n Response ---
+            print(f"Forwarded to {url}: Status {response.status_code}")
+
     except httpx.RequestError as e:
         print(f"Error forwarding to {url}: {e}")
 
