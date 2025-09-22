@@ -108,7 +108,7 @@ if not all([N8N_WEBHOOK_URL, ODOO_WEBHOOK_URL, WHATSAPP_VERIFY_TOKEN]):
 # Create an asynchronous HTTP client
 client = httpx.AsyncClient(timeout=10.0)
 
-async def forward_webhook(url: str, data: dict, signature: str | None):
+async def forward_webhook(url: str, data: dict, signature256: str | None, signature: str | None):
     """
     Asynchronously sends the webhook data to the specified URL
     and includes the X-Hub-Signature-256 header for Odoo.
@@ -122,7 +122,8 @@ async def forward_webhook(url: str, data: dict, signature: str | None):
 
         # If it is Odoo AND we have a signature, add it to the headers
         if is_odoo_request and signature:
-            headers['X-Hub-Signature-256'] = signature
+            headers['X-Hub-Signature-256'] = signature256
+            headers['X-Hub-Signature'] = signature
             print(f"Forwarding to Odoo with signature...")
         elif is_odoo_request:
             print(f"Warning: Forwarding to Odoo *without* signature.")
@@ -182,7 +183,7 @@ async def receive_webhook(
 
     # Pass the signature to the background tasks
     # The n8n call will ignore it, the Odoo call will use it.
-    background_tasks.add_task(forward_webhook, N8N_WEBHOOK_URL, data, x_hub_signature_256)
-    background_tasks.add_task(forward_webhook, ODOO_WEBHOOK_URL, data, x_hub_signature_256)
+    background_tasks.add_task(forward_webhook, N8N_WEBHOOK_URL, data, x_hub_signature_256, x_hub_signature)
+    background_tasks.add_task(forward_webhook, ODOO_WEBHOOK_URL, data, x_hub_signature_256, x_hub_signature)
 
     return {"status": "received"}
