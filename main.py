@@ -108,46 +108,45 @@ if not all([N8N_WEBHOOK_URL, ODOO_WEBHOOK_URL, WHATSAPP_VERIFY_TOKEN]):
 # Create an asynchronous HTTP client
 client = httpx.AsyncClient(timeout=10.0)
 
-async def forward_webhook(url: str, data: dict, signature256: str | None, signature: str | None):
+# vvv THIS IS THE UPDATED FUNCTION vvv
+# It now accepts raw bytes ("body") instead of a Python dict ("data")
+async def forward_webhook(url: str, body: bytes, signature: str | None):
     """
-    Asynchronously sends the webhook data to the specified URL
-    and includes the X-Hub-Signature-256 header for Odoo.
+    Asynchronously forwards the RAW request body and signature.
     """
     try:
-        # Start with base headers
-        headers = {'Content-Type': 'application/json'}
+        # These are the headers we will forward
+        headers = {
+            # We must tell the destination server that the content is JSON
+            'Content-Type': 'application/json',
+        }
         
-        # Check if this is the Odoo request
         is_odoo_request = ODOO_WEBHOOK_URL and ODOO_WEBHOOK_URL in url
 
-        # If it is Odoo AND we have a signature, add it to the headers
+        # If it's the Odoo request and we have a signature, add it
         if is_odoo_request and signature:
-            headers['X-Hub-Signature-256'] = signature256
-            headers['X-Hub-Signature'] = signature
+            headers['X-Hub-Signature-256'] = signature
             print(f"Forwarding to Odoo with signature...")
-        elif is_odoo_request:
-            print(f"Warning: Forwarding to Odoo *without* signature.")
 
-        response = await client.post(url, json=data, headers=headers)
+        # Use content=body to send the raw bytes, NOT json=data
+        response = await client.post(url, content=body, headers=headers)
         
+        # (Logging logic is the same as before)
         if is_odoo_request:
-            # --- Detailed Odoo Response (Same as before) ---
             print(f"--- Full Response from Odoo ({url}) ---")
             print(f"Status Code: {response.status_code}")
             print(f"Response Body: {response.text}") 
             print("------------------------------------------")
         else:
-            # --- Standard n8n Response (Same as before) ---
             print(f"Forwarded to {url}: Status {response.status_code}")
 
     except httpx.RequestError as e:
         print(f"Error forwarding to {url}: {e}")
+# ^^^ THIS IS THE UPDATED FUNCTION ^^^
+
 
 @app.on_event("shutdown")
 async def shutdown_event():
-    """
-    Cleanly close the httpx client when the app shuts down.
-    """
     await client.aclose()
 
 @app.get("/webhook")
@@ -156,34 +155,38 @@ async def verify_webhook(
     token: str = Query(..., alias="hub.verify_token"),
     challenge: str = Query(..., alias="hub.challenge")
 ):
-    """
-    Handles the WhatsApp Webhook Verification Challenge.
-    """
+    # (This function is unchanged)
     print("GET request received for verification.")
     if mode == 'subscribe' and token == WHATSAPP_VERIFY_TOKEN:
         print("Verification successful!")
         return Response(content=challenge, media_type="text/plain")
     else:
-        print(f"Verification failed. Token: {token} | Mode: {mode}")
+        print("Verification failed.")
         raise HTTPException(status_code=403, detail="Verification token mismatch")
 
+
+# vvv THIS IS THE UPDATED FUNCTION vvv
 @app.post("/webhook")
 async def receive_webhook(
     request: Request,
     background_tasks: BackgroundTasks,
-    # This is the "FastAPI" way to grab the specific header
-    x_hub_signature_256: str | None = Header(None, alias="X-Hub-Signature-256"),
-    x_hub_signature: str | None = Header(None, alias="X-Hub-Signature")
+    x_hub_signature_256: str | None = Header(None, alias="X-Hub-Signature-256")
 ):
     """
-    Receives incoming messages from WhatsApp and forwards them
-    WITH THE SIGNATURE HEADER to Odoo.
+    Receives the raw webhook and forwards the raw body
+    without parsing it.
     """
-    data = await request.json()
-
-    # Pass the signature to the background tasks
-    # The n8n call will ignore it, the Odoo call will use it.
-    background_tasks.add_task(forward_webhook, N8N_WEBHOOK_URL, data, x_hub_signature_256, x_hub_signature)
-    background_tasks.add_task(forward_webhook, ODOO_WEBHOOK_URL, data, x_hub_signature_256, x_hub_signature)
+    print(f"POST request received. Signature found: {x_hub_signature_256 is not None}")
+    
+    # Get the RAW request body as bytes
+    body_bytes = await request.body()
+    
+    # We no longer parse JSON here (data = await request.json())
+    
+    # Pass the raw bytes to the background tasks
+    # n8n's webhook node will also correctly parse the raw body
+    background_tasks.add_task(forward_webhook, N8N_WEBHOOK_URL, body_bytes, x_hub_signature_256)
+    background_tasks.add_task(forward_webhook, ODOO_WEBHOOK_URL, body_bytes, x_hub_signature_256)
 
     return {"status": "received"}
+# ^^^ THIS IS THE UPDATED FUNCTION ^^^
