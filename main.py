@@ -99,9 +99,9 @@ def update_equipos(equipo_id: int, data: EquipoUpdate):
 
 # --- CONFIGURATION ---
 # Set these as environment variables
-N8N_WEBHOOK_URL = os.environ.get("https://n8n.siysmedicalmx.com/webhook/meta_hook")
-ODOO_WEBHOOK_URL = os.environ.get("https://siys-care.odoo.com/whatsapp/webhook")
-WHATSAPP_VERIFY_TOKEN = os.environ.get("ZhhDMXZ4")
+N8N_WEBHOOK_URL = os.environ.get("N8N_WEBHOOK_URL")
+ODOO_WEBHOOK_URL = os.environ.get("ODOO_WEBHOOK_URL")
+WHATSAPP_VERIFY_TOKEN = os.environ.get("WHATSAPP_VERIFY_TOKEN")
 
 # Basic check to ensure config is loaded
 if not all([N8N_WEBHOOK_URL, ODOO_WEBHOOK_URL, WHATSAPP_VERIFY_TOKEN]):
