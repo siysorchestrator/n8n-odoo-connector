@@ -17,6 +17,10 @@ odoo = OdooClient(
     password = os.getenv("XMLRPC_PASSWORD")
 )
 
+#############################################################################
+############### ------ n8n - Odoo CONNECTION LAYER ------ ###################
+#############################################################################
+
 # ------------------ CLIENTES ------------------
 @app.get("/partners")
 def list_partners(limit: int = 10, phone: str | None = Query(None)):
@@ -95,43 +99,36 @@ def update_equipos(equipo_id: int, data: EquipoUpdate):
     return {"updated": equipo_id}
 
 
-##########WHATSAPP WEBHOOK CALLS#################
+#############################################################################
+############# ------ WHATSAPP BUSINESS WEBHOOK CALLS ------ #################
+#############################################################################
 
 N8N_WEBHOOK_URL = os.environ.get("N8N_WEBHOOK_URL")
 ODOO_WEBHOOK_URL = os.environ.get("ODOO_WEBHOOK_URL")
 WHATSAPP_VERIFY_TOKEN = os.environ.get("WHATSAPP_VERIFY_TOKEN")
 
-# Basic check to ensure config is loaded
 if not all([N8N_WEBHOOK_URL, ODOO_WEBHOOK_URL, WHATSAPP_VERIFY_TOKEN]):
     print("FATAL ERROR: Environment variables are not set.")
 
-# Create an asynchronous HTTP client
 client = httpx.AsyncClient(timeout=10.0)
 
-# vvv THIS IS THE UPDATED FUNCTION vvv
-# It now accepts raw bytes ("body") instead of a Python dict ("data")
 async def forward_webhook(url: str, body: bytes, signature: str | None):
     """
     Asynchronously forwards the RAW request body and signature.
     """
     try:
-        # These are the headers we will forward
         headers = {
-            # We must tell the destination server that the content is JSON
             'Content-Type': 'application/json',
         }
         
         is_odoo_request = ODOO_WEBHOOK_URL and ODOO_WEBHOOK_URL in url
 
-        # If it's the Odoo request and we have a signature, add it
         if is_odoo_request and signature:
             headers['X-Hub-Signature-256'] = signature
             print(f"Forwarding to Odoo with signature...")
 
-        # Use content=body to send the raw bytes, NOT json=data
         response = await client.post(url, content=body, headers=headers)
         
-        # (Logging logic is the same as before)
         if is_odoo_request:
             print(f"--- Full Response from Odoo ({url}) ---")
             print(f"Status Code: {response.status_code}")
@@ -142,7 +139,6 @@ async def forward_webhook(url: str, body: bytes, signature: str | None):
 
     except httpx.RequestError as e:
         print(f"Error forwarding to {url}: {e}")
-# ^^^ THIS IS THE UPDATED FUNCTION ^^^
 
 
 @app.on_event("shutdown")
@@ -155,7 +151,6 @@ async def verify_webhook(
     token: str = Query(..., alias="hub.verify_token"),
     challenge: str = Query(..., alias="hub.challenge")
 ):
-    # (This function is unchanged)
     print("GET request received for verification.")
     if mode == 'subscribe' and token == WHATSAPP_VERIFY_TOKEN:
         print("Verification successful!")
@@ -164,8 +159,6 @@ async def verify_webhook(
         print("Verification failed.")
         raise HTTPException(status_code=403, detail="Verification token mismatch")
 
-
-# vvv THIS IS THE UPDATED FUNCTION vvv
 @app.post("/webhook")
 async def receive_webhook(
     request: Request,
@@ -178,15 +171,9 @@ async def receive_webhook(
     """
     print(f"POST request received. Signature found: {x_hub_signature_256 is not None}")
     
-    # Get the RAW request body as bytes
     body_bytes = await request.body()
     
-    # We no longer parse JSON here (data = await request.json())
-    
-    # Pass the raw bytes to the background tasks
-    # n8n's webhook node will also correctly parse the raw body
     background_tasks.add_task(forward_webhook, N8N_WEBHOOK_URL, body_bytes, x_hub_signature_256)
     background_tasks.add_task(forward_webhook, ODOO_WEBHOOK_URL, body_bytes, x_hub_signature_256)
 
     return {"status": "received"}
-# ^^^ THIS IS THE UPDATED FUNCTION ^^^
