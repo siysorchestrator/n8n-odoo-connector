@@ -95,11 +95,8 @@ def update_equipos(equipo_id: int, data: EquipoUpdate):
     return {"updated": equipo_id}
 
 
-##########WHATSAPP CALLS (MITM)#################
+##########WHATSAPP WEBHOOK CALLS#################
 
-
-# --- CONFIGURATION ---
-# Set these as environment variables
 N8N_WEBHOOK_URL = os.environ.get("N8N_WEBHOOK_URL")
 ODOO_WEBHOOK_URL = os.environ.get("ODOO_WEBHOOK_URL")
 WHATSAPP_VERIFY_TOKEN = os.environ.get("WHATSAPP_VERIFY_TOKEN")
@@ -107,11 +104,8 @@ WHATSAPP_VERIFY_TOKEN = os.environ.get("WHATSAPP_VERIFY_TOKEN")
 # Basic check to ensure config is loaded
 if not all([N8N_WEBHOOK_URL, ODOO_WEBHOOK_URL, WHATSAPP_VERIFY_TOKEN]):
     print("FATAL ERROR: Environment variables are not set.")
-    # In a real app, you might want to exit or raise an error
-    # For this example, we'll just print a warning.
 
 # Create an asynchronous HTTP client
-# We use a context-managed client for better performance
 client = httpx.AsyncClient(timeout=10.0)
 
 async def forward_webhook(url: str, data: dict):
@@ -121,17 +115,14 @@ async def forward_webhook(url: str, data: dict):
     try:
         headers = {'Content-Type': 'application/json'}
         response = await client.post(url, json=data, headers=headers)
-         # Check if this is the Odoo request
         is_odoo_request = ODOO_WEBHOOK_URL and ODOO_WEBHOOK_URL in url
         
         if is_odoo_request:
-            # --- Detailed Odoo Response ---
             print(f"--- Full Response from Odoo ({url}) ---")
             print(f"Status Code: {response.status_code}")
-            print(f"Response Body: {response.text}") # <-- This prints the full response
+            print(f"Response Body: {response.text}")
             print("------------------------------------------")
         else:
-            # --- Standard n8n Response ---
             print(f"Forwarded to {url}: Status {response.status_code}")
 
     except httpx.RequestError as e:
@@ -174,7 +165,6 @@ async def receive_webhook(
     data = await request.json()
 
     # Add the forwarding tasks to the background
-    # This lets us return 200 OK immediately
     background_tasks.add_task(forward_webhook, N8N_WEBHOOK_URL, data)
     background_tasks.add_task(forward_webhook, ODOO_WEBHOOK_URL, data)
 
