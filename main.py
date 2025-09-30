@@ -148,6 +148,7 @@ def log_message(data: OdooMessageCreate, x_api_key: str = Header(None)):
             [channel_id],             # Positional arguments (the ID of the channel to post on)
             {                         # Keyword arguments (the message values)
                 'body': data.message_body,
+                'subject': "from n8n",
                 'message_type': 'whatsapp_message',
                 'subtype_id': 1,
                 'author_id': BOT_PARTNER_ID,
