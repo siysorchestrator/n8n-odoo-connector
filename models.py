@@ -55,3 +55,9 @@ class EquipoUpdate(BaseModel):
     x_studio_modelo_equipo: Optional[int] = 1
     x_studio_poseedor: Optional[int] = 0
     x_studio_propietario: Optional[int] = 0
+
+# --- Mensajes ---
+class OdooMessageCreate(BaseModel):
+    contact_phone: str
+    message_body: str
+    message_id: Optional[str] = None 

@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Header, Query, HTTPException, Request, Response, BackgroundTasks
 from typing import List
 from odoo_client import OdooClient
-from models import PartnerCreate, PartnerUpdate, EquipoCreate, EquipoUpdate, PreOrderCreate, PreOrderUpdate
+from models import PartnerCreate, PartnerUpdate, EquipoCreate, EquipoUpdate, PreOrderCreate, PreOrderUpdate, OdooMessageCreate
 import os
 from dotenv import load_dotenv
 import httpx
@@ -17,13 +17,17 @@ odoo = OdooClient(
     password = os.getenv("XMLRPC_PASSWORD")
 )
 
+API_SECRET_KEY = os.getenv("PROXY_API_SECRET_KEY")
+
 #############################################################################
 ############### ------ n8n - Odoo CONNECTION LAYER ------ ###################
 #############################################################################
 
 # ------------------ CLIENTES ------------------
 @app.get("/partners")
-def list_partners(limit: int = 10, phone: str | None = Query(None)):
+def list_partners(limit: int = 10, phone: str | None = Query(None), x_api_key: str = Header(None)):
+    if x_api_key != API_SECRET_KEY:
+        raise HTTPException(status_code=401, detail="Invalid API Key")
     domain = []
     if phone:
         domain.append(("phone_sanitized", "=", phone))
@@ -39,7 +43,9 @@ def list_partners(limit: int = 10, phone: str | None = Query(None)):
     return result
 
 @app.get("/partners/{partner_id}")
-def list_partners(partner_id: int):
+def list_partners(partner_id: int, x_api_key: str = Header(None)):
+    if x_api_key != API_SECRET_KEY:
+        raise HTTPException(status_code=401, detail="Invalid API Key")
     return odoo.read(
         "res.partner",
         [partner_id],
@@ -47,24 +53,32 @@ def list_partners(partner_id: int):
     )
 
 @app.post("/partners")
-def create_partner(data: PartnerCreate):
+def create_partner(data: PartnerCreate, x_api_key: str = Header(None)):
+    if x_api_key != API_SECRET_KEY:
+        raise HTTPException(status_code=401, detail="Invalid API Key")
     partner_id = odoo.create("res.partner", data.model_dump())
     return {"partner_id": partner_id}
 
 @app.put("/partners/{partner_id}")
-def update_partner(partner_id: int, data: PartnerUpdate):
+def update_partner(partner_id: int, data: PartnerUpdate, x_api_key: str = Header(None)):
+    if x_api_key != API_SECRET_KEY:
+        raise HTTPException(status_code=401, detail="Invalid API Key")
     odoo.write("res.partner", [partner_id], data.model_dump(exclude_unset=True))
     return {"updated": partner_id}
 
 # ------------------ PRE-ORDENES ------------------
 @app.post("/preorder")
-def create_sale(data: PreOrderCreate):
+def create_sale(data: PreOrderCreate, x_api_key: str = Header(None)):
+    if x_api_key != API_SECRET_KEY:
+        raise HTTPException(status_code=401, detail="Invalid API Key")
     order_id = odoo.create("x_pre_orden", data.model_dump())
     return {"order_id": order_id}
 
 # ------------------ EQUIPOS ------------------
 @app.get("/equipos")
-def list_equipos(limit: int = 10, poseedor: int | None = Query(None), serie: str | None = Query(None)):
+def list_equipos(limit: int = 10, poseedor: int | None = Query(None), serie: str | None = Query(None), x_api_key: str = Header(None)):
+    if x_api_key != API_SECRET_KEY:
+        raise HTTPException(status_code=401, detail="Invalid API Key")
     domain = []
     if poseedor:
         domain.append(('x_studio_poseedor', '=', poseedor))
@@ -81,7 +95,9 @@ def list_equipos(limit: int = 10, poseedor: int | None = Query(None), serie: str
     return result
 
 @app.get("/equipos/{equipo_id}")
-def list_equipos(equipo_id: int):
+def list_equipos(equipo_id: int, x_api_key: str = Header(None)):
+    if x_api_key != API_SECRET_KEY:
+        raise HTTPException(status_code=401, detail="Invalid API Key")
     return odoo.read(
         "x_equipo_medico",
         [equipo_id],
@@ -89,14 +105,74 @@ def list_equipos(equipo_id: int):
     )
 
 @app.post("/equipos")
-def create_equipos(data: EquipoCreate):
+def create_equipos(data: EquipoCreate, x_api_key: str = Header(None)):
+    if x_api_key != API_SECRET_KEY:
+        raise HTTPException(status_code=401, detail="Invalid API Key")
     equipo_id = odoo.create("x_equipo_medico", data.model_dump())
     return {"id": equipo_id}
 
 @app.put("/equipos/{equipo_id}")
-def update_equipos(equipo_id: int, data: EquipoUpdate):
+def update_equipos(equipo_id: int, data: EquipoUpdate, x_api_key: str = Header(None)):
+    if x_api_key != API_SECRET_KEY:
+        raise HTTPException(status_code=401, detail="Invalid API Key")
     odoo.write("x_equipo_medico", [equipo_id], data.model_dump(exclude_unset=True))
     return {"updated": equipo_id}
+
+# ------------------ WHATSAPP MESSAGES ------------------
+@app.post("/log_message")
+def log_message(data: OdooMessageCreate, x_api_key: str = Header(None)):
+    """
+    Receives an outgoing message from n8n and logs it to the correct
+    discuss.channel to appear in the chat interface.
+    """
+    if x_api_key != API_SECRET_KEY:
+        raise HTTPException(status_code=401, detail="Invalid API Key")
+
+    try:
+        BOT_PARTNER_ID = 3  #Bot's Partner ID (from the Contact's URL)
+        
+        channel_domain = [('whatsapp_number', '=', data.contact_phone)]
+        channel_data = odoo.search_read("discuss.channel", channel_domain, ["id"], limit=1)
+        channel_id = 0
+        if channel_data:
+            channel_id = channel_data[0]['id']
+        else:
+            raise HTTPException(status_code=404, detail="Discussion channel was not found.")
+
+        mail_message_id = odoo.models.execute_kw(
+            odoo.db,                  # 1. Database name
+            odoo.uid,                 # 2. User ID
+            odoo.password,            # 3. Password/API Key
+            'discuss.channel',        # 4. Model
+            'message_post',           # 5. Method
+            [channel_id],             # Positional arguments (the ID of the channel to post on)
+            {                         # Keyword arguments (the message values)
+                'body': data.message_body,
+                'message_type': 'whatsapp_message',
+                'subtype_id': 1,
+                'author_id': BOT_PARTNER_ID,
+            }
+        )
+
+        if not mail_message_id:
+            raise HTTPException(status_code=500, detail="Failed to post message to channel in Odoo.")
+
+
+        if isinstance(mail_message_id, list) and mail_message_id:
+            mail_message_id = mail_message_id[0]
+
+        return {
+            "status": "success",
+            "detail": "Message successfully logged and visible in discuss.channel.",
+            "channel_id": channel_id,
+            "mail_message_id": mail_message_id,
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"An error occurred: {e}"
+        )
 
 
 #############################################################################
