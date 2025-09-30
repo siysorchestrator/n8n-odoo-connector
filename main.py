@@ -125,6 +125,7 @@ def log_message(data: OdooMessageCreate, x_api_key: str = Header(None)):
     Receives an outgoing message from n8n and logs it to the correct
     discuss.channel to appear in the chat interface.
     """
+    print(x_api_key)
     if x_api_key != API_SECRET_KEY:
         raise HTTPException(status_code=401, detail="Invalid API Key")
 
