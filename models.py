@@ -24,6 +24,7 @@ class PartnerUpdate(BaseModel):
 
 # --- Pre-Orden ---
 class PreOrderCreate(BaseModel):
+    x_name: Optional[str] = ""
     x_studio_cliente: int
     x_studio_marca_equipo: Optional[str]
     x_studio_modelo_equipo: Optional[str]
