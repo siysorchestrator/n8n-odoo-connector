@@ -33,7 +33,7 @@ class PreOrderCreate(BaseModel):
 
 class PreOrderUpdate(BaseModel):
     x_studio_cliente: int
-    x_studio_marca_equipo: Optional[int]
+    x_studio_marca_equipo: Optional[str]
     x_studio_modelo_equipo: Optional[str]
     x_studio_serie_equipo: Optional[str]
     x_studio_descripcion_de_servicio: Optional[str]
