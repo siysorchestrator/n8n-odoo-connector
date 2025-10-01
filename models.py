@@ -43,7 +43,7 @@ class PreOrderUpdate(BaseModel):
 # --- Sales Quote ---
 class SaleCreate(BaseModel):
     partner_id: int
-    order_line: Optional[List[dict]]  # [{'product_id': int, 'product_uom_qty': float, 'price_unit': float}]
+    order_line: Optional[List[dict]] = []  # [{'product_id': int, 'product_uom_qty': float, 'price_unit': float}]
 
 class SaleUpdate(BaseModel):
     order_line: Optional[List[dict]]
