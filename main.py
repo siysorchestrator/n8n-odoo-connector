@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Header, Query, HTTPException, Request, Response, BackgroundTasks
 from typing import List
 from odoo_client import OdooClient
-from models import PartnerCreate, PartnerUpdate, EquipoCreate, EquipoUpdate, PreOrderCreate, PreOrderUpdate, OdooMessageCreate
+from models import PartnerCreate, PartnerUpdate, EquipoCreate, EquipoUpdate, PreOrderCreate, SaleCreate, OdooMessageCreate
 import os
 from dotenv import load_dotenv
 import httpx
@@ -83,6 +83,36 @@ def create_sale(data: PreOrderCreate, x_api_key: str = Header(None)):
         raise HTTPException(status_code=401, detail="Invalid API Key")
     order_id = odoo.create("x_pre_orden", data.model_dump())
     return {"order_id": order_id}
+
+# ------------------ ORDENES DE VENTA ------------------
+@app.get("/sales")
+def list_sales(limit: int = 10, partner_id: int | None = Query(None), x_api_key: str = Header(None)):
+    if x_api_key != API_SECRET_KEY:
+        raise HTTPException(status_code=401, detail="Invalid API Key")
+    domain = []
+    if partner_id:
+        domain.append(('partner_id', '=', partner_id))  
+    result = odoo.search_read("sale.order", domain, ["id", "partner_id", "order_line", "repair_order_ids"], limit)
+    if not result:
+        return result
+    return result
+
+@app.get("/sales/{sale_id}")
+def list_sales(sale_id: int, x_api_key: str = Header(None)):
+    if x_api_key != API_SECRET_KEY:
+        raise HTTPException(status_code=401, detail="Invalid API Key")
+    return odoo.read(
+        "sale.order",
+        [sale_id],
+        ["id", "partner_id", "order_line", "repair_order_ids"]
+    )
+
+@app.post("/sales")
+def create_sale(data: SaleCreate, x_api_key: str = Header(None)):
+    if x_api_key != API_SECRET_KEY:
+        raise HTTPException(status_code=401, detail="Invalid API Key")
+    sale_id = odoo.create("sale.order", data.model_dump())
+    return {"sale_id": sale_id}
 
 # ------------------ EQUIPOS ------------------
 @app.get("/equipos")

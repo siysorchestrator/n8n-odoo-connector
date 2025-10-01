@@ -40,6 +40,14 @@ class PreOrderUpdate(BaseModel):
     x_studio_descripcion_de_servicio: Optional[str]
     x_studio_tipo_de_servicio: Optional[str]
 
+# --- Sales Quote ---
+class SaleCreate(BaseModel):
+    partner_id: int
+    order_line: List[dict]  # [{'product_id': int, 'product_uom_qty': float, 'price_unit': float}]
+
+class SaleUpdate(BaseModel):
+    order_line: Optional[List[dict]]
+
 # --- Equipos Medicos ---
 class EquipoCreate(BaseModel):
     x_name: str
