@@ -48,6 +48,21 @@ class SaleCreate(BaseModel):
 class SaleUpdate(BaseModel):
     order_line: Optional[List[dict]]
 
+# --- Repair Order ---
+class RepairCreate(BaseModel):
+    partner_id: int
+    product_id: int
+    product_qty: float
+    product_uom: int
+    internal_notes: Optional[str]
+
+class RepairUpdate(BaseModel):
+    partner_id: int
+    product_id: int
+    product_qty: float
+    product_uom: int
+    internal_notes: Optional[str]
+
 # --- Equipos Medicos ---
 class EquipoCreate(BaseModel):
     x_name: str

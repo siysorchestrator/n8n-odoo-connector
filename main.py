@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Header, Query, HTTPException, Request, Response, BackgroundTasks
 from typing import List
 from odoo_client import OdooClient
-from models import PartnerCreate, PartnerUpdate, EquipoCreate, EquipoUpdate, PreOrderCreate, SaleCreate, OdooMessageCreate
+from models import PartnerCreate, PartnerUpdate, EquipoCreate, EquipoUpdate, PreOrderCreate, SaleCreate, OdooMessageCreate, RepairCreate, RepairUpdate
 import os
 from dotenv import load_dotenv
 import httpx
@@ -113,6 +113,43 @@ def create_sale(data: SaleCreate, x_api_key: str = Header(None)):
         raise HTTPException(status_code=401, detail="Invalid API Key")
     sale_id = odoo.create("sale.order", data.model_dump())
     return {"sale_id": sale_id}
+
+# ------------------ OT ------------------
+@app.get("/repairs")
+def list_repairs(limit: int = 10, partner_id: int | None = Query(None), x_api_key: str = Header(None)):
+    if x_api_key != API_SECRET_KEY:
+        raise HTTPException(status_code=401, detail="Invalid API Key")
+    domain = []
+    if partner_id:
+        domain.append(('partner_id', '=', partner_id))
+    result = odoo.search_read("repair.order", domain, ["id", "partner_id", "product_id", "product_qty", "internal_notes"], limit)
+    if not result:
+        return result
+    return result
+
+@app.get("/repairs/{repair_id}")
+def list_partners(repair_id: int, x_api_key: str = Header(None)):
+    if x_api_key != API_SECRET_KEY:
+        raise HTTPException(status_code=401, detail="Invalid API Key")
+    return odoo.read(
+        "repair.order",
+        [repair_id],
+        ["id", "partner_id", "product_id", "product_qty", "internal_notes"]
+    )
+
+@app.post("/repairs")
+def create_repair(data: RepairCreate, x_api_key: str = Header(None)):
+    if x_api_key != API_SECRET_KEY:
+        raise HTTPException(status_code=401, detail="Invalid API Key")
+    repair_id = odoo.create("repair.order", data.model_dump())
+    return {"repair_id": repair_id}
+
+@app.put("/repairs/{repair_id}")
+def update_repair(repair_id: int, data: RepairUpdate, x_api_key: str = Header(None)):
+    if x_api_key != API_SECRET_KEY:
+        raise HTTPException(status_code=401, detail="Invalid API Key")
+    odoo.write("repair.order", [repair_id], data.model_dump(exclude_unset=True))
+    return {"updated": repair_id}
 
 # ------------------ EQUIPOS ------------------
 @app.get("/equipos")
