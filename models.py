@@ -24,16 +24,18 @@ class PartnerUpdate(BaseModel):
 
 # --- Pre-Orden ---
 class PreOrderCreate(BaseModel):
-    x_name: Optional[str]
     x_studio_cliente: int
-    x_studio_equipo_mdico: Optional[int]
+    x_studio_marca_equipo: Optional[int]
+    x_studio_modelo_equipo: Optional[str]
+    x_studio_serie_equipo: Optional[str]
     x_studio_descripcion_de_servicio: Optional[str]
     x_studio_tipo_de_servicio: Optional[str]
 
 class PreOrderUpdate(BaseModel):
-    x_name: Optional[str]
     x_studio_cliente: int
-    x_studio_equipo_mdico: Optional[int]
+    x_studio_marca_equipo: Optional[int]
+    x_studio_modelo_equipo: Optional[str]
+    x_studio_serie_equipo: Optional[str]
     x_studio_descripcion_de_servicio: Optional[str]
     x_studio_tipo_de_servicio: Optional[str]
 
@@ -59,5 +61,5 @@ class EquipoUpdate(BaseModel):
 # --- Mensajes ---
 class OdooMessageCreate(BaseModel):
     contact_phone: str
-    message_body: str
+    message_body: str   
     message_id: Optional[str] = None 
