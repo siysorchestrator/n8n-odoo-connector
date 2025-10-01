@@ -50,18 +50,14 @@ class SaleUpdate(BaseModel):
 
 # --- Repair Order ---
 class RepairCreate(BaseModel):
-    partner_id: int
-    product_id: int
-    product_qty: float
-    product_uom: int
     internal_notes: Optional[str]
+    x_studio_servicio_solicitado: Optional[str]
+    x_studio_tipo_de_servicio: Optional[str]
 
 class RepairUpdate(BaseModel):
-    partner_id: int
-    product_id: int
-    product_qty: float
-    product_uom: int
     internal_notes: Optional[str]
+    x_studio_servicio_solicitado: Optional[str]
+    x_studio_tipo_de_servicio: Optional[str]
 
 # --- Equipos Medicos ---
 class EquipoCreate(BaseModel):
