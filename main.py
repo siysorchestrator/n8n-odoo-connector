@@ -67,6 +67,16 @@ def update_partner(partner_id: int, data: PartnerUpdate, x_api_key: str = Header
     return {"updated": partner_id}
 
 # ------------------ PRE-ORDENES ------------------
+@app.get("/preorder/{preorder_id}")
+def list_preorders(preorder_id: int, x_api_key: str = Header(None)):
+    if x_api_key != API_SECRET_KEY:
+        raise HTTPException(status_code=401, detail="Invalid API Key")
+    return odoo.read(
+        "x_pre_orden",
+        [preorder_id],
+        ["id", "x_name", "x_studio_cliente", "x_studio_tipo_de_servicio", "x_studio_marca_equipo", "x_studio_modelo_equipo", "x_studio_serie_equipo", "x_studio_descripcion_de_servicio"]
+    )
+
 @app.post("/preorder")
 def create_sale(data: PreOrderCreate, x_api_key: str = Header(None)):
     if x_api_key != API_SECRET_KEY:
