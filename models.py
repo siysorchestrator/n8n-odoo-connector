@@ -1,3 +1,6 @@
+#Modelos pydantic que se utilizamos para crear y actualizar datos en Odoo desde N8N
+#Se usa pydantic para facil validacion de tipo de datos y facil traduccion del json al objeto.
+
 from pydantic import BaseModel
 from typing import Optional, List
 
@@ -26,6 +29,7 @@ class PartnerUpdate(BaseModel):
 class PreOrderCreate(BaseModel):
     x_name: Optional[str] = ""
     x_studio_cliente: int
+    x_studio_tiempo_estimado_de_servicio: Optional[str]
     x_studio_marca_equipo: Optional[str]
     x_studio_modelo_equipo: Optional[str]
     x_studio_serie_equipo: Optional[str]
@@ -35,6 +39,7 @@ class PreOrderCreate(BaseModel):
 class PreOrderUpdate(BaseModel):
     x_studio_cliente: int   
     x_studio_marca_equipo: Optional[str]
+    x_studio_tiempo_estimado_de_servicio: Optional[str]
     x_studio_modelo_equipo: Optional[str]
     x_studio_serie_equipo: Optional[str]
     x_studio_descripcion_de_servicio: Optional[str]

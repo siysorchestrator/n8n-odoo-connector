@@ -1,3 +1,7 @@
+#RESPONSABILIDADES:
+#1. Ser el Broker para las comunicaciones entre Odoo y el agente de N8N. Usamos FastAPI para hacerlo simple.
+#2. Fungir como proxy entre whatsapp business y odoo/N8N. Recibe los mensajes y los reenvía a Odoo y N8N sin alteraciones
+
 from fastapi import FastAPI, Header, Query, HTTPException, Request, Response, BackgroundTasks
 from typing import List
 from odoo_client import OdooClient
@@ -8,7 +12,6 @@ import httpx
 
 load_dotenv()
 app = FastAPI(title="Odoo Proxy API")
-
 
 odoo = OdooClient(
     url = os.getenv("XMLRPC_SERVER_URL"),
@@ -199,8 +202,9 @@ def update_equipos(equipo_id: int, data: EquipoUpdate, x_api_key: str = Header(N
 @app.post("/log_message")
 def log_message(data: OdooMessageCreate, x_api_key: str = Header(None)):
     """
-    Receives an outgoing message from n8n and logs it to the correct
-    discuss.channel to appear in the chat interface.
+    Recibe un mensaje saliente de n8n y lo archiva en el modelo discuss.channel
+    para que aparezca en la interfaz de chat de whatsapp de Odoo.
+    Esto nos permitirá ver las interacciones con el bot.
     """
     if x_api_key != API_SECRET_KEY:
         raise HTTPException(status_code=401, detail="Invalid API Key")
@@ -235,7 +239,6 @@ def log_message(data: OdooMessageCreate, x_api_key: str = Header(None)):
         if not mail_message_id:
             raise HTTPException(status_code=500, detail="Failed to post message to channel in Odoo.")
 
-
         if isinstance(mail_message_id, list) and mail_message_id:
             mail_message_id = mail_message_id[0]
 
@@ -268,7 +271,7 @@ client = httpx.AsyncClient(timeout=10.0)
 
 async def forward_webhook(url: str, body: bytes, signature: str | None):
     """
-    Asynchronously forwards the RAW request body and signature.
+    Reenvía de manera asíncrona el body y la firma del request. El body es importante que no se altere.
     """
     try:
         headers = {
@@ -305,6 +308,9 @@ async def verify_webhook(
     token: str = Query(..., alias="hub.verify_token"),
     challenge: str = Query(..., alias="hub.challenge")
 ):
+    '''
+    Recibe el challenge de Facebook para darle de alta como receptor del webhook.
+    '''
     print("GET request received for verification.")
     if mode == 'subscribe' and token == WHATSAPP_VERIFY_TOKEN:
         print("Verification successful!")
@@ -320,8 +326,7 @@ async def receive_webhook(
     x_hub_signature_256: str | None = Header(None, alias="X-Hub-Signature-256")
 ):
     """
-    Receives the raw webhook and forwards the raw body
-    without parsing it.
+    Recibe el webhook de whatsapp y lo reenvía sin parsearlo.
     """
     print(f"POST request received. Signature found: {x_hub_signature_256 is not None}")
     
