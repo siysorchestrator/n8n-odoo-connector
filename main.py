@@ -207,32 +207,59 @@ def update_equipos(equipo_id: int, data: EquipoUpdate, x_api_key: str = Header(N
 @app.post("/log_message")
 def log_message(data: OdooMessageCreate, x_api_key: str = Header(None)):
     """
-    Recibe un mensaje saliente de n8n y lo archiva en el modelo discuss.channel
-    para que aparezca en la interfaz de chat de whatsapp de Odoo.
-    Esto nos permitirá ver las interacciones con el bot.
+    Recibe un mensaje saliente de n8n y lo archiva en el modelo discuss.channel.
+    Si el canal no existe, lo crea.
     """
     if x_api_key != API_SECRET_KEY:
         raise HTTPException(status_code=401, detail="Invalid API Key")
 
     try:
-        BOT_PARTNER_ID = 3  #Bot's Partner ID (from the Contact's URL)
+        BOT_PARTNER_ID = 3  # Bot's Partner ID
         
+        # Search for existing channel
         channel_domain = [('whatsapp_number', '=', data.contact_phone)]
         channel_data = odoo.search_read("discuss.channel", channel_domain, ["id"], limit=1)
+        
         channel_id = 0
+        
         if channel_data:
             channel_id = channel_data[0]['id']
         else:
-            raise HTTPException(status_code=404, detail="Discussion channel was not found.")
+            # ==> LOGIC TO CREATE CHANNEL ADDED HERE <==
+            print(f"Channel not found for {data.contact_phone}. Creating new channel...")
+            
+            channel_vals = {
+                'name': data.contact_phone,
+                'whatsapp_number': data.contact_phone, # Save this so it can be found next time
+                'channel_type': 'chat',                # Usually 'chat' or 'whatsapp'
+                'description': 'Created via n8n API',
+                # We add the Bot as a member so they can see the chat
+                'channel_member_ids': [
+                    (0, 0, {'partner_id': BOT_PARTNER_ID})
+                ]
+            }
 
+            # Execute 'create' method
+            channel_id = odoo.models.execute_kw(
+                odoo.db, 
+                odoo.uid, 
+                odoo.password, 
+                'discuss.channel', 
+                'create', 
+                [channel_vals]
+            )
+            
+            print(f"Created new channel ID: {channel_id}")
+
+        # Post the message
         mail_message_id = odoo.models.execute_kw(
-            odoo.db,                  # 1. Database name
-            odoo.uid,                 # 2. User ID
-            odoo.password,            # 3. Password/API Key
-            'discuss.channel',        # 4. Model
-            'message_post',           # 5. Method
-            [channel_id],             # Positional arguments (the ID of the channel to post on)
-            {                         # Keyword arguments (the message values)
+            odoo.db,                  
+            odoo.uid,                 
+            odoo.password,            
+            'discuss.channel',        
+            'message_post',           
+            [channel_id],             
+            {                         
                 'body': data.message_body,
                 'subject': "from n8n",
                 'message_type': 'whatsapp_message',
@@ -249,14 +276,16 @@ def log_message(data: OdooMessageCreate, x_api_key: str = Header(None)):
 
         return {
             "status": "success",
-            "detail": "Message successfully logged and visible in discuss.channel.",
+            "detail": "Message successfully logged.",
             "channel_id": channel_id,
             "mail_message_id": mail_message_id,
+            "new_channel_created": not bool(channel_data)
         }
 
-
     except Exception as e:
-        traceback.print_exc()  # <--- 2. This prints the full stack trace to your logs
+        # Using traceback to print the full error to Render logs
+        import traceback
+        traceback.print_exc()
     
         raise HTTPException(
             status_code=500,
