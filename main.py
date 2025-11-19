@@ -26,6 +26,10 @@ API_SECRET_KEY = os.getenv("PROXY_API_SECRET_KEY")
 ############### ------ n8n - Odoo CONNECTION LAYER ------ ###################
 #############################################################################
 
+@app.get("/")
+def read_root():
+    return {"status": "ok"}
+
 # ------------------ CLIENTES ------------------
 @app.get("/partners")
 def list_partners(limit: int = 10, phone: str | None = Query(None), x_api_key: str = Header(None)):
