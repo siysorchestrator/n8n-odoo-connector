@@ -231,7 +231,8 @@ def log_message(data: OdooMessageCreate, x_api_key: str = Header(None)):
             channel_vals = {
                 'name': data.contact_phone,
                 'whatsapp_number': data.contact_phone, # Save this so it can be found next time
-                'channel_type': 'whatsapp',                # Usually 'chat' or 'whatsapp'
+                'channel_type': 'whatsapp',  
+                'wa_account_id': 2,              # Usually 'chat' or 'whatsapp'
                 'description': 'Created via n8n API',
                 # We add the Bot as a member so they can see the chat
                 'channel_member_ids': [
