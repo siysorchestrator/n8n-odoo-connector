@@ -9,6 +9,7 @@ from models import PartnerCreate, PartnerUpdate, EquipoCreate, EquipoUpdate, Pre
 import os
 from dotenv import load_dotenv
 import httpx
+import traceback
 
 load_dotenv()
 app = FastAPI(title="Odoo Proxy API")
@@ -253,7 +254,10 @@ def log_message(data: OdooMessageCreate, x_api_key: str = Header(None)):
             "mail_message_id": mail_message_id,
         }
 
+
     except Exception as e:
+        traceback.print_exc()  # <--- 2. This prints the full stack trace to your logs
+    
         raise HTTPException(
             status_code=500,
             detail=f"An error occurred: {e}"
@@ -330,7 +334,7 @@ async def receive_webhook(
     x_hub_signature_256: str | None = Header(None, alias="X-Hub-Signature-256")
 ):
     """
-    Recibe el webhook de whatsapp y lo reenvía sin parsearlo.
+    Recibe el webhook de whatsapp y lo reenvía tal como llegó.
     """
     print(f"POST request received. Signature found: {x_hub_signature_256 is not None}")
     
