@@ -256,7 +256,6 @@ def log_message(data: OdooMessageCreate, x_api_key: str = Header(None)):
             print(f"Channel not found for {data.contact_phone}. Creating new channel...")
             
             channel_vals = {
-                'name': desired_channel_name, # Uses the formatted name
                 'whatsapp_number': data.contact_phone,
                 'channel_type': 'whatsapp',  
                 'wa_account_id': 2,
