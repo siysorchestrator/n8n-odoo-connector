@@ -217,8 +217,7 @@ def log_message(data: OdooMessageCreate, x_api_key: str = Header(None)):
         BOT_PARTNER_ID = 3
         
         # --- STEP 1: Search for Partner (Logic Added) ---
-        # We check both 'phone' and 'mobile' fields using the '|' (OR) operator
-        partner_domain = ['|', ('phone', '=', data.contact_phone), ('mobile', '=', data.contact_phone)]
+        partner_domain = ['|', ('phone_sanitized', '=', data.contact_phone)]
         partner_data = odoo.search_read("res.partner", partner_domain, ["name"], limit=1)
         
         partner_name = partner_data[0]['name'] if partner_data else None
