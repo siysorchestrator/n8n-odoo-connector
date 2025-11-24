@@ -208,39 +208,65 @@ def update_equipos(equipo_id: int, data: EquipoUpdate, x_api_key: str = Header(N
 def log_message(data: OdooMessageCreate, x_api_key: str = Header(None)):
     """
     Recibe un mensaje saliente de n8n y lo archiva en el modelo discuss.channel.
-    Si el canal no existe, lo crea.
+    Busca si existe un partner y ajusta el nombre del canal acorde.
     """
     if x_api_key != API_SECRET_KEY:
         raise HTTPException(status_code=401, detail="Invalid API Key")
 
     try:
-        BOT_PARTNER_ID = 3  # Bot's Partner ID
+        BOT_PARTNER_ID = 3
         
-        # Search for existing channel
+        # --- STEP 1: Search for Partner (Logic Added) ---
+        # We check both 'phone' and 'mobile' fields using the '|' (OR) operator
+        partner_domain = ['|', ('phone', '=', data.contact_phone), ('mobile', '=', data.contact_phone)]
+        partner_data = odoo.search_read("res.partner", partner_domain, ["name"], limit=1)
+        
+        partner_name = partner_data[0]['name'] if partner_data else None
+
+        # --- STEP 2: Define Desired Channel Name ---
+        if partner_name:
+            desired_channel_name = f"{partner_name} ({data.contact_phone})"
+        else:
+            desired_channel_name = data.contact_phone
+
+        # --- STEP 3: Channel Logic ---
+        # We fetch 'name' as well to compare it later
         channel_domain = [('whatsapp_number', '=', data.contact_phone)]
-        channel_data = odoo.search_read("discuss.channel", channel_domain, ["id"], limit=1)
+        channel_data = odoo.search_read("discuss.channel", channel_domain, ["id", "name"], limit=1)
         
         channel_id = 0
         
         if channel_data:
+            # Channel exists
             channel_id = channel_data[0]['id']
+            current_channel_name = channel_data[0]['name']
+
+            # Check if we need to rename the channel (Update Logic)
+            if current_channel_name != desired_channel_name:
+                print(f"Renaming channel {channel_id} to: {desired_channel_name}")
+                odoo.models.execute_kw(
+                    odoo.db,
+                    odoo.uid,
+                    odoo.password,
+                    'discuss.channel',
+                    'write',
+                    [[channel_id], {'name': desired_channel_name}]
+                )
         else:
-            # ==> LOGIC TO CREATE CHANNEL ADDED HERE <==
+            # Create new channel
             print(f"Channel not found for {data.contact_phone}. Creating new channel...")
             
             channel_vals = {
-                'name': data.contact_phone,
-                'whatsapp_number': data.contact_phone, # Save this so it can be found next time
+                'name': desired_channel_name, # Uses the formatted name
+                'whatsapp_number': data.contact_phone,
                 'channel_type': 'whatsapp',  
-                'wa_account_id': 2,              # Usually 'chat' or 'whatsapp'
+                'wa_account_id': 2,
                 'description': 'Created via n8n API',
-                # We add the Bot as a member so they can see the chat
                 'channel_member_ids': [
                     (0, 0, {'partner_id': BOT_PARTNER_ID})
                 ]
             }
 
-            # Execute 'create' method
             channel_id = odoo.models.execute_kw(
                 odoo.db, 
                 odoo.uid, 
@@ -272,6 +298,7 @@ def log_message(data: OdooMessageCreate, x_api_key: str = Header(None)):
         if not mail_message_id:
             raise HTTPException(status_code=500, detail="Failed to post message to channel in Odoo.")
 
+        # Handle Odoo returning a list for message_ids sometimes
         if isinstance(mail_message_id, list) and mail_message_id:
             mail_message_id = mail_message_id[0]
 
@@ -279,12 +306,12 @@ def log_message(data: OdooMessageCreate, x_api_key: str = Header(None)):
             "status": "success",
             "detail": "Message successfully logged.",
             "channel_id": channel_id,
+            "channel_name": desired_channel_name,
             "mail_message_id": mail_message_id,
             "new_channel_created": not bool(channel_data)
         }
 
     except Exception as e:
-        # Using traceback to print the full error to Render logs
         import traceback
         traceback.print_exc()
     
