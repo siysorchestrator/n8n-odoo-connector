@@ -10,7 +10,7 @@ async def forward_webhook_payload(target_url: str, body: bytes, signature: str |
     try:
         headers = {'Content-Type': 'application/json'}
         
-        # Add signature only if sending to Odoo (based on your original logic)
+        # Add signature only if sending to Odoo
         is_odoo = settings.ODOO_WEBHOOK_URL and settings.ODOO_WEBHOOK_URL in target_url
         if is_odoo and signature:
             headers['X-Hub-Signature-256'] = signature

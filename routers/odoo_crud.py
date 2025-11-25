@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Query, HTTPException
 from typing import List
 from services.odoo_service import odoo, handle_incoming_n8n_message
 from dependencies import verify_api_key
-from models import PartnerCreate, PartnerUpdate, OdooMessageCreate # Import others...
+from models.models import PartnerCreate, PartnerUpdate, OdooMessageCreate # Import others...
 
 # We protect all routes in this router with the API Key
 router = APIRouter(dependencies=[Depends(verify_api_key)])

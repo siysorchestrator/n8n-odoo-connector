@@ -1,4 +1,4 @@
-from odoo_client import OdooClient # Assuming this exists from your original code
+from models.odoo_client import OdooClient
 from config import settings
 
 # Initialize globally or per request depending on OdooClient thread safety. 
