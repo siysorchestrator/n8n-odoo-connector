@@ -1,5 +1,5 @@
 #Modelos pydantic que se utilizamos para crear y actualizar datos en Odoo desde N8N
-#Se usa pydantic para facil validacion de tipo de datos y facil traduccion del json al objeto.
+#Se usa pydantic para manejar datos tipados y facil traduccion del json al objeto.
 
 from pydantic import BaseModel
 from typing import Optional, List
