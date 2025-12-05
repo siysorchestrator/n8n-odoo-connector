@@ -12,8 +12,8 @@ class PartnerCreate(BaseModel):
     street: Optional[str]
     zip: Optional[str]
     city: Optional[str]
-    state_id: Optional[str]
-    country_id: Optional[str]
+    state_id: Optional[int]
+    country_id: Optional[int]
 
 class PartnerUpdate(BaseModel):
     name: Optional[str]
@@ -22,8 +22,8 @@ class PartnerUpdate(BaseModel):
     street: Optional[str]
     zip: Optional[str]
     city: Optional[str]
-    state_id: Optional[str]
-    country_id: Optional[str]
+    state_id: Optional[int]
+    country_id: Optional[int]
 
 # --- Pre-Orden ---
 class PreOrderCreate(BaseModel):
