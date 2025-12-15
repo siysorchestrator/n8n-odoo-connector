@@ -161,6 +161,66 @@ def update_equipo(equipo_id: int, data: EquipoUpdate):
     return {"updated": equipo_id}
 
 # ==========================================
+# ============ X_INSTALACIONES =============
+# ==========================================
+
+@router.get("/instalaciones")
+def list_instalaciones(limit: int = 1, serial_code: str | None = None):
+    domain = []
+    if serial_code:
+        domain.append(('x_serial_code', '=', serial_code))
+    
+    fields_to_fetch = [
+        "x_id_item",
+        "x_nombre",
+        "x_fecha",
+        "x_serial_code",
+        "x_equipment"
+    ]
+    
+    return odoo.search_read(
+        "x_instalaciones",
+        domain,
+        fields_to_fetch,
+        limit
+    )
+
+@router.get("/instalaciones/serial/{serial_code}")
+def get_instalacion_by_serial(serial_code: str):
+    fields_to_fetch = [
+        "id",
+        "x_id_item",
+        "x_nombre",
+        "x_fecha",
+        "x_serial_code",
+        "x_equipment"
+    ]
+    
+    # Buscar por serial code en lugar de ID
+    return odoo.search_read(
+        "x_instalaciones",
+        [('x_serial_code', '=', serial_code)],
+        fields_to_fetch,
+        limit=1
+    )
+
+@router.get("/instalaciones/{instalacion_id}")
+def get_instalacion(instalacion_id: int):
+    fields_to_fetch = [
+        "id",
+        "x_id_item",
+        "x_nombre",
+        "x_fecha",
+        "x_serial_code",
+        "x_equipment"
+    ]
+    return odoo.read(
+        "x_instalaciones",
+        [instalacion_id],
+        fields_to_fetch
+    )
+
+# ==========================================
 # ========== WHATSAPP LOGGING ==============
 # ==========================================
 
