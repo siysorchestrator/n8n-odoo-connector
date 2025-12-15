@@ -20,6 +20,6 @@ class Settings:
 
     # Constants / IDs
     BOT_PARTNER_ID = 3
-    WHATSAPP_ACCOUNT_ID = 2
+    WHATSAPP_ACCOUNT_ID = os.getenv("ODOO_WHATSAPP_ID")
 
 settings = Settings()
