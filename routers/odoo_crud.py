@@ -8,7 +8,7 @@ from models.models import (
     SaleCreate, 
     RepairCreate, RepairUpdate, 
     EquipoCreate, EquipoUpdate, 
-    OdooMessageCreate
+    OdooMessageCreate, TicketCreate
 )
 
 # We protect all routes in this router with the API Key
@@ -63,6 +63,15 @@ def get_preorder(preorder_id: int):
 def create_preorder(data: PreOrderCreate):
     order_id = odoo.create("x_pre_orden", data.model_dump())
     return {"order_id": order_id}
+
+# ==========================================
+# ================ TICKETS =================
+# ==========================================
+
+@router.post("/ticket")
+def create_ticket(data: TicketCreate):
+    tick_id = odoo.create("helpdesk.ticket", data.model_dump())
+    return {"ticket_id": tick_id}
 
 # ==========================================
 # ============ ORDENES DE VENTA ============
@@ -196,7 +205,6 @@ def get_instalacion_by_serial(serial_code: str):
         "x_equipment"
     ]
     
-    # Buscar por serial code en lugar de ID
     return odoo.search_read(
         "x_instalaciones",
         [('x_serial_code', '=', serial_code)],

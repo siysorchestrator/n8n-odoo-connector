@@ -43,6 +43,14 @@ class PreOrderUpdate(BaseModel):
     x_studio_descripcion_de_servicio: Optional[str]
     x_studio_tipo_de_servicio: Optional[str]
 
+# --- Ticket de soporte ---
+class TicketCreate(BaseModel):
+    name: str
+    kanban_state: str
+    partner_id: Optional[int]
+    priority: Optional[str]
+    partner_phone: Optional[str]
+
 # --- Sales Quote ---
 class SaleCreate(BaseModel):
     partner_id: int
