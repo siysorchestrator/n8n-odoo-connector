@@ -46,10 +46,10 @@ class PreOrderUpdate(BaseModel):
 # --- Ticket de soporte ---
 class TicketCreate(BaseModel):
     name: str
-    kanban_state: str
     partner_id: Optional[int]
-    priority: Optional[str]
+    priority: Optional[int]
     partner_phone: Optional[str]
+    description: Optional[str]
 
 # --- Sales Quote ---
 class SaleCreate(BaseModel):
