@@ -73,6 +73,14 @@ def create_ticket(data: TicketCreate):
     tick_id = odoo.create("helpdesk.ticket", data.model_dump())
     return {"ticket_id": tick_id}
 
+@router.get("/ticket/{tick_id}")
+def get_ticket(tick_id: int):
+    return odoo.read(
+        "helpdesk.ticket",
+        [tick_id],
+        ["ticket_ref", "name", "partner_id", "priority", "partner_phone", "description"]
+    )
+
 # ==========================================
 # ============ ORDENES DE VENTA ============
 # ==========================================
