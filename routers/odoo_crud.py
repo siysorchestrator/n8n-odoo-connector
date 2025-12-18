@@ -185,14 +185,15 @@ def update_equipo(equipo_id: int, data: EquipoUpdate):
 def list_instalaciones(limit: int = 1, serial_code: str | None = None):
     domain = []
     if serial_code:
-        domain.append(('x_serial_code', '=', serial_code))
+        domain.append(('x_codigo_serial', '=', serial_code))
     
     fields_to_fetch = [
-        "x_id_item",
-        "x_nombre",
-        "x_fecha",
-        "x_serial_code",
-        "x_equipment"
+        'x_id_item',
+        'x_nombre',
+        'x_fecha',
+        'x_codigo_serial',
+        'x_equipo',
+        'x_meses'
     ]
     
     return odoo.search_read(
@@ -206,16 +207,17 @@ def list_instalaciones(limit: int = 1, serial_code: str | None = None):
 def get_instalacion_by_serial(serial_code: str):
     fields_to_fetch = [
         "id",
-        "x_id_item",
-        "x_nombre",
-        "x_fecha",
-        "x_serial_code",
-        "x_equipment"
+        'x_id_item',
+        'x_nombre',
+        'x_fecha',
+        'x_codigo_serial',
+        'x_equipo',
+        'x_meses'
     ]
     
     return odoo.search_read(
         "x_instalaciones",
-        [('x_serial_code', '=', serial_code)],
+        [('x_codigo_serial', '=', serial_code)],
         fields_to_fetch,
         limit=1
     )
@@ -224,11 +226,12 @@ def get_instalacion_by_serial(serial_code: str):
 def get_instalacion(instalacion_id: int):
     fields_to_fetch = [
         "id",
-        "x_id_item",
-        "x_nombre",
-        "x_fecha",
-        "x_serial_code",
-        "x_equipment"
+        'x_id_item',
+        'x_nombre',
+        'x_fecha',
+        'x_codigo_serial',
+        'x_equipo',
+        'x_meses'
     ]
     return odoo.read(
         "x_instalaciones",
