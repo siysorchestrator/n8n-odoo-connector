@@ -34,6 +34,7 @@ def handle_incoming_n8n_message(data):
     else:
         # Create new
         channel_vals = {
+            'name': desired_name,
             'whatsapp_number': data.contact_phone,
             'channel_type': 'whatsapp',
             'wa_account_id': settings.WHATSAPP_ACCOUNT_ID,
