@@ -19,7 +19,7 @@ class Settings:
     WHATSAPP_VERIFY_TOKEN = os.getenv("WHATSAPP_VERIFY_TOKEN")
 
     # Constants / IDs
-    BOT_PARTNER_ID = 3
+    BOT_PARTNER_ID = os.getenv("BOT_PARTNER_ID")
     WHATSAPP_ACCOUNT_ID = os.getenv("ODOO_WHATSAPP_ID")
 
 settings = Settings()
