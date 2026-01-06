@@ -240,42 +240,51 @@ def log_message_endpoint(data: OdooMessageCreate):
 # ==========================================
 
 @router.get("/chat_channels/by_member/{partner_id}")
-def get_channels_by_member(partner_id: int, limit: int = 1):
-
+def get_channels_by_member(partner_id: int, limit: int = 20):
+    """
+    Obtiene todos los canales donde un miembro específico está presente.
+    
+    En Odoo moderno, los miembros están en el campo channel_member_ids del canal.
+    """
     try:
-        member_ids = odoo.search_read(
-            "mail.channel.member", 
-            [('partner_id', '=', partner_id)], 
-            limit=100
-        )
-        
-        if not member_ids:
-            return {
-                "partner_id": partner_id,
-                "count": 0,
-                "channels": []
-            }
-        
-        member_records = odoo.read(
-            "mail.channel.member", 
-            member_ids, 
-            ["channel_id"]
-        )
-        
-        channel_ids = [record["channel_id"][0] for record in member_records]
-        
-        channels = odoo.read(
+        channels = odoo.search_read(
             "mail.channel", 
-            channel_ids, 
-            ["id", "name", "channel_type", "description"]
+            [],
+            ["id", "name", "channel_type", "description", "channel_member_ids"],
+            limit=limit * 5  
         )
+        
+        filtered_channels = []
+        for channel in channels:
+            member_ids = channel.get("channel_member_ids", [])
+            
+            if member_ids:
+                try:
+                    members = odoo.read(
+                        "res.partner",  
+                        member_ids[:10],  
+                        ["id"] 
+                    )
+                    
+                    if partner_id in member_ids:
+                        filtered_channels.append({
+                            "id": channel["id"],
+                            "name": channel["name"],
+                            "channel_type": channel["channel_type"],
+                            "description": channel.get("description", "")
+                        })
+                        
+                except Exception:
+                    continue
         
         return {
             "partner_id": partner_id,
-            "count": len(channels),
-            "channels": channels[:limit]
+            "count": len(filtered_channels),
+            "channels": filtered_channels[:limit]
         }
+        
     except Exception as e:
+        print(f"Error in get_channels_by_member: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
 
 
