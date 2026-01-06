@@ -11,11 +11,8 @@ odoo = OdooClient(
 )
 
 def handle_incoming_n8n_message(data):
-    """
-    Business logic to log message into Odoo Discuss Channel.
-    """
     # 1. Search Partner
-    partner_domain = [('phone_sanitized', '=', data.contact_phone)]
+    partner_domain = [('phone_sanitized', '=', '+' + data.contact_phone)]
     partner_data = odoo.search_read("res.partner", partner_domain, ["name"], limit=1)
     partner_name = partner_data[0]['name'] if partner_data else None
 
