@@ -239,6 +239,46 @@ def log_message_endpoint(data: OdooMessageCreate):
 # =========== CHAT CHANNELS ================
 # ==========================================
 
+@router.get("/chat_channels/by_member/{partner_id}")
+def get_channels_by_member(partner_id: int, limit: int = 1):
+
+    try:
+        member_ids = odoo.search(
+            "mail.channel.member", 
+            [('partner_id', '=', partner_id)], 
+            limit=100
+        )
+        
+        if not member_ids:
+            return {
+                "partner_id": partner_id,
+                "count": 0,
+                "channels": []
+            }
+        
+        member_records = odoo.read(
+            "mail.channel.member", 
+            member_ids, 
+            ["channel_id"]
+        )
+        
+        channel_ids = [record["channel_id"][0] for record in member_records]
+        
+        channels = odoo.read(
+            "mail.channel", 
+            channel_ids, 
+            ["id", "name", "channel_type", "description"]
+        )
+        
+        return {
+            "partner_id": partner_id,
+            "count": len(channels),
+            "channels": channels[:limit]
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
 @router.put("/chat_channels/{channel_id}/name")
 def update_chat_channel_name(channel_id: int, data: ChatChannelNameUpdate):
     try:
