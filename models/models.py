@@ -25,24 +25,6 @@ class PartnerUpdate(BaseModel):
     state_id: Optional[int]
     country_id: Optional[int]
 
-# --- Pre-Orden ---
-class PreOrderCreate(BaseModel):
-    x_name: Optional[str] = ""
-    x_studio_cliente: int
-    x_studio_marca_equipo: Optional[str]
-    x_studio_modelo_equipo: Optional[str]
-    x_studio_serie_equipo: Optional[str]
-    x_studio_descripcion_de_servicio: Optional[str]
-    x_studio_tipo_de_servicio: Optional[str]
-
-class PreOrderUpdate(BaseModel):
-    x_studio_cliente: int   
-    x_studio_marca_equipo: Optional[str]
-    x_studio_modelo_equipo: Optional[str]
-    x_studio_serie_equipo: Optional[str]
-    x_studio_descripcion_de_servicio: Optional[str]
-    x_studio_tipo_de_servicio: Optional[str]
-
 # --- Ticket de soporte ---
 class TicketCreate(BaseModel):
     name: str
@@ -94,3 +76,7 @@ class OdooMessageCreate(BaseModel):
     contact_phone: str
     message_body: str   
     message_id: Optional[str] = None 
+
+# --- Canales de chat ---
+class ChatChannelNameUpdate(BaseModel):
+    name: str

@@ -4,11 +4,10 @@ from services.odoo_service import odoo, handle_incoming_n8n_message
 from dependencies import verify_api_key
 from models.models import (
     PartnerCreate, PartnerUpdate, 
-    PreOrderCreate, 
     SaleCreate, 
     RepairCreate, RepairUpdate, 
     EquipoCreate, EquipoUpdate, 
-    OdooMessageCreate, TicketCreate
+    OdooMessageCreate, TicketCreate, ChatChannelNameUpdate
 )
 
 # We protect all routes in this router with the API Key
@@ -46,23 +45,6 @@ def update_partner(partner_id: int, data: PartnerUpdate):
     # exclude_unset=True ensures we only send fields that were actually included in the JSON
     odoo.write("res.partner", [partner_id], data.model_dump(exclude_unset=True))
     return {"updated": partner_id}
-
-# ==========================================
-# ============== PRE-ORDENES ===============
-# ==========================================
-
-@router.get("/preorder/{preorder_id}")
-def get_preorder(preorder_id: int):
-    return odoo.read(
-        "x_pre_orden",
-        [preorder_id],
-        ["id", "x_name", "x_studio_cliente", "x_studio_tipo_de_servicio", "x_studio_marca_equipo", "x_studio_modelo_equipo", "x_studio_serie_equipo", "x_studio_descripcion_de_servicio"]
-    )
-
-@router.post("/preorder")
-def create_preorder(data: PreOrderCreate):
-    order_id = odoo.create("x_pre_orden", data.model_dump())
-    return {"order_id": order_id}
 
 # ==========================================
 # ================ TICKETS =================
@@ -252,3 +234,30 @@ def log_message_endpoint(data: OdooMessageCreate):
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
+
+# ==========================================
+# =========== CHAT CHANNELS ================
+# ==========================================
+
+@router.put("/chat_channels/{channel_id}/name")
+def update_chat_channel_name(channel_id: int, data: ChatChannelNameUpdate):
+    try:
+        channel = odoo.read("mail.channel", [channel_id], ["id", "name"])
+        if not channel:
+            raise HTTPException(status_code=404, detail="Channel not found")
+        
+        update_data = {"name": data.name}
+        odoo.write("mail.channel", [channel_id], update_data)
+        
+        return {
+            "success": True,
+            "channel_id": channel_id,
+            "old_name": channel[0].get("name"),
+            "new_name": data.name,
+            "message": f"Channel name updated from '{channel[0].get('name')}' to '{data.name}'"
+        }
+    except Exception as e:
+        error_msg = str(e)
+        if "record does not exist or has been deleted" in error_msg.lower():
+            raise HTTPException(status_code=404, detail="Channel not found")
+        raise HTTPException(status_code=400, detail=f"Error updating channel: {error_msg}")
