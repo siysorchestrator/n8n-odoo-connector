@@ -243,7 +243,7 @@ def log_message_endpoint(data: OdooMessageCreate):
 def get_channels_by_member(partner_id: int, limit: int = 1):
 
     try:
-        member_ids = odoo.search(
+        member_ids = odoo.search_read(
             "mail.channel.member", 
             [('partner_id', '=', partner_id)], 
             limit=100
