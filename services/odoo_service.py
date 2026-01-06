@@ -53,7 +53,7 @@ def handle_incoming_n8n_message(data):
             'subject': "from n8n",
             'message_type': 'whatsapp_message',
             'subtype_id': 1,
-            'author_id': settings.BOT_PARTNER_ID,
+            'author_id': int(settings.BOT_PARTNER_ID),
         }
     )
     
