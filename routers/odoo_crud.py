@@ -241,14 +241,9 @@ def log_message_endpoint(data: OdooMessageCreate):
 
 @router.get("/chat_channels/by_member/{partner_id}")
 def get_channels_by_member(partner_id: int, limit: int = 20):
-    """
-    Obtiene todos los canales donde un miembro específico está presente.
-    
-    En Odoo moderno, los miembros están en el campo channel_member_ids del canal.
-    """
     try:
         channels = odoo.search_read(
-            "mail.channel", 
+            "discuss.channel", 
             [],
             ["id", "name", "channel_type", "description", "channel_member_ids"],
             limit=limit * 5  
@@ -291,12 +286,12 @@ def get_channels_by_member(partner_id: int, limit: int = 20):
 @router.put("/chat_channels/{channel_id}/name")
 def update_chat_channel_name(channel_id: int, data: ChatChannelNameUpdate):
     try:
-        channel = odoo.read("mail.channel", [channel_id], ["id", "name"])
+        channel = odoo.read("discuss.channel", [channel_id], ["id", "name"])
         if not channel:
             raise HTTPException(status_code=404, detail="Channel not found")
         
         update_data = {"name": data.name}
-        odoo.write("mail.channel", [channel_id], update_data)
+        odoo.write("discuss.channel", [channel_id], update_data)
         
         return {
             "success": True,
