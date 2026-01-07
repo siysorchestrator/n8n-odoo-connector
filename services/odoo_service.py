@@ -9,33 +9,41 @@ odoo = OdooClient(
 )
 
 def handle_incoming_n8n_message(data):
+    # 1. Search Partner
     partner_domain = [('phone_sanitized', '=', '+' + data.contact_phone)]
     partner_data = odoo.search_read("res.partner", partner_domain, ["id", "name"], limit=1)
     
     contact_partner_id = partner_data[0]['id'] if partner_data else None  # Cambiado el nombre
     partner_name = partner_data[0]['name'] if partner_data else None
 
+    # 2. Determine Channel Name
     desired_name = f"{partner_name} ({data.contact_phone})" if partner_name else data.contact_phone
 
+    # 3. Find or Create Channel
     channel_domain = [('whatsapp_number', '=', data.contact_phone)]
     channel_data = odoo.search_read("discuss.channel", channel_domain, ["id", "name"], limit=1)
     
     if channel_data:
         channel_id = channel_data[0]['id']
         if channel_data[0]['name'] != desired_name:
+            # Update name if needed
             odoo.write('discuss.channel', [channel_id], {'name': desired_name})
     else:
+        # Usar lista de miembros desde settings
         members_to_add = settings.DEFAULT_CHANNEL_MEMBERS.copy()
         
+        # Añadir el contacto si existe y no está ya en la lista
         if contact_partner_id and contact_partner_id not in members_to_add:
             members_to_add.append(contact_partner_id)
         
+        # Crear estructura para Odoo
         channel_member_ids = []
-        for member_partner_id in members_to_add:
+        for member_partner_id in members_to_add:  # Cambiado el nombre
             channel_member_ids.append((0, 0, {
                 'partner_id': member_partner_id
             }))
         
+        # Create new channel
         channel_vals = {
             'name': desired_name,
             'whatsapp_number': data.contact_phone,
@@ -46,6 +54,7 @@ def handle_incoming_n8n_message(data):
         }
         channel_id = odoo.create('discuss.channel', channel_vals)
 
+    # 4. Post Message
     msg_id = odoo.models.execute_kw(
         odoo.db, odoo.uid, odoo.password,
         'discuss.channel', 'message_post',
