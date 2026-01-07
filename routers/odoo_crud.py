@@ -253,23 +253,63 @@ def list_chat_channels(
         channel_name: Filtrar por nombre del canal (contiene)
         partner_id: Filtrar por ID del partner relacionado
     """
-    domain = []
-    
-    if channel_name:
-        domain.append(('name', 'ilike', channel_name))
-    
-    if partner_id:
-        domain.append(('channel_member_ids.partner_id', '=', partner_id))
-    
-    # Buscar canales de tipo 'chat' (que incluyen WhatsApp)
-    domain.append(('channel_type', '=', 'chat'))
-    
-    return odoo.search_read(
-        "mail.channel",
-        domain,
-        ["id", "name", "channel_type", "description", "channel_member_ids", "uuid"],
-        limit=limit
-    )
+    try:
+        print(f"[DEBUG] list_chat_channels llamado con: limit={limit}, channel_name={channel_name}, partner_id={partner_id}")
+        
+        domain = []
+        
+        if channel_name:
+            domain.append(('name', 'ilike', channel_name))
+        
+        if partner_id:
+            # Verificar que el partner existe
+            partner = odoo.read("res.partner", [partner_id], ["id", "name"])
+            if not partner:
+                raise HTTPException(status_code=404, detail=f"Partner con ID {partner_id} no encontrado")
+            
+            # En discuss.channel, los miembros se relacionan directamente con partners
+            domain.append(('channel_member_ids.partner_id', '=', partner_id))
+        
+        # Buscar canales de tipo 'chat' o 'whatsapp'
+        # En discuss.channel, channel_type puede ser: 'chat', 'channel', 'group'
+        domain.append(('channel_type', 'in', ['chat', 'whatsapp']))
+        
+        # Campos específicos de discuss.channel
+        fields = [
+            "id", 
+            "name", 
+            "channel_type", 
+            "description", 
+            "channel_member_ids", 
+            "uuid", 
+            "channel_partner_ids",
+            "is_pinned",
+            "last_message_id"
+        ]
+        
+        print(f"[DEBUG] Buscando en discuss.channel con domain: {domain}")
+        print(f"[DEBUG] Campos: {fields}")
+        
+        result = odoo.search_read(
+            "discuss.channel",  # ¡CORREGIDO!
+            domain,
+            fields,
+            limit=limit
+        )
+        
+        print(f"[DEBUG] Encontrados {len(result)} canales")
+        return result or []
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[DEBUG] Error en list_chat_channels: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Error interno del servidor: {str(e)}"
+        )
 
 @router.post("/chat_channels/{channel_id}/add_members")
 def add_members_to_channel(
@@ -286,37 +326,37 @@ def add_members_to_channel(
         force_create: Si es True, crear el canal si no existe (opcional)
     """
     try:
-        # Verificar si el canal existe
-        channel = odoo.read("mail.channel", [channel_id], ["id", "name", "channel_member_ids"])
+        print(f"[DEBUG] add_members_to_channel llamado: channel_id={channel_id}, user_ids={user_ids}")
+        
+        # Verificar si el canal existe en discuss.channel
+        channel = odoo.read("discuss.channel", [channel_id], ["id", "name", "channel_member_ids"])
         
         if not channel:
             if not force_create:
                 raise HTTPException(status_code=404, detail=f"Canal con ID {channel_id} no encontrado")
-            # Crear canal si no existe (esto sería un caso especial)
             raise HTTPException(status_code=400, detail="La creación automática de canales no está implementada")
         
-        # Obtener los miembros actuales
-        current_member_ids = channel[0].get('channel_member_ids', [])
-        
-        # Buscar los partners asociados a los usuarios
+        # Obtener los partners de los usuarios
         users = odoo.read("res.users", user_ids, ["partner_id"])
+        print(f"[DEBUG] Usuarios encontrados: {users}")
         
         partner_ids_to_add = []
         for user in users:
-            if user and 'partner_id' in user:
+            if user and 'partner_id' in user and user['partner_id']:
                 partner_ids_to_add.append(user['partner_id'][0])
         
         if not partner_ids_to_add:
             raise HTTPException(status_code=400, detail="No se encontraron partners para los usuarios especificados")
         
-        # Filtrar partners que no estén ya en el canal
-        existing_partners = []
-        if current_member_ids:
-            # Obtener información de los miembros actuales
-            members = odoo.read("mail.channel.member", current_member_ids, ["partner_id"])
-            existing_partners = [m['partner_id'][0] for m in members if m and 'partner_id' in m]
+        print(f"[DEBUG] Partner IDs a agregar: {partner_ids_to_add}")
         
-        new_partner_ids = [pid for pid in partner_ids_to_add if pid not in existing_partners]
+        # Para discuss.channel, agregamos partners directamente al campo channel_partner_ids
+        # Leer los partners actuales
+        current_partner_ids = channel[0].get('channel_partner_ids', [])
+        print(f"[DEBUG] Partners actuales en el canal: {current_partner_ids}")
+        
+        # Filtrar los que ya están
+        new_partner_ids = [pid for pid in partner_ids_to_add if pid not in current_partner_ids]
         
         if not new_partner_ids:
             return {
@@ -326,34 +366,28 @@ def add_members_to_channel(
                 "added_count": 0
             }
         
-        # Agregar los nuevos miembros al canal
-        added_count = 0
-        for partner_id in new_partner_ids:
-            try:
-                # Crear registro de miembro del canal
-                member_data = {
-                    'channel_id': channel_id,
-                    'partner_id': partner_id,
-                    'folded': False,  # No minimizado
-                    'is_minimized': False,
-                    'is_pinned': False,
-                }
-                odoo.create("mail.channel.member", member_data)
-                added_count += 1
-            except Exception as e:
-                # Continuar con los demás si hay error con uno
-                print(f"Error agregando partner {partner_id} al canal: {str(e)}")
-                continue
+        print(f"[DEBUG] Nuevos partners a agregar: {new_partner_ids}")
+        
+        # Actualizar el canal agregando los nuevos partners
+        # En discuss.channel, agregamos al campo channel_partner_ids
+        updated_partner_ids = current_partner_ids + new_partner_ids
+        
+        odoo.write("discuss.channel", [channel_id], {
+            'channel_partner_ids': [(6, 0, updated_partner_ids)]  # (6, 0, [ids]) reemplaza la lista
+        })
         
         return {
             "status": "success",
-            "message": f"Se agregaron {added_count} usuarios al canal",
+            "message": f"Se agregaron {len(new_partner_ids)} usuarios al canal",
             "channel_id": channel_id,
-            "added_count": added_count,
-            "added_partner_ids": new_partner_ids[:added_count]  # Solo los que se agregaron exitosamente
+            "added_count": len(new_partner_ids),
+            "added_partner_ids": new_partner_ids
         }
         
     except HTTPException:
         raise
     except Exception as e:
+        print(f"[DEBUG] Error en add_members_to_channel: {str(e)}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Error al agregar miembros al canal: {str(e)}")
