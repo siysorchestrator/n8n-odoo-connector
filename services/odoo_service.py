@@ -13,7 +13,9 @@ odoo = OdooClient(
 def handle_incoming_n8n_message(data):
     # 1. Search Partner
     partner_domain = [('phone_sanitized', '=', '+' + data.contact_phone)]
-    partner_data = odoo.search_read("res.partner", partner_domain, ["name"], limit=1)
+    partner_data = odoo.search_read("res.partner", partner_domain, ["id", "name"], limit=1)
+    
+    partner_id = partner_data[0]['id'] if partner_data else None
     partner_name = partner_data[0]['name'] if partner_data else None
 
     # 2. Determine Channel Name
@@ -29,14 +31,28 @@ def handle_incoming_n8n_message(data):
             # Update name if needed
             odoo.write('discuss.channel', [channel_id], {'name': desired_name})
     else:
-        # Create new
+        # Usar lista de miembros desde settings
+        members_to_add = settings.DEFAULT_CHANNEL_MEMBERS.copy()
+        
+        # Añadir el contacto si existe y no está ya en la lista
+        if partner_id and partner_id not in members_to_add:
+            members_to_add.append(partner_id)
+        
+        # Crear estructura para Odoo
+        channel_member_ids = []
+        for partner_id in members_to_add:
+            channel_member_ids.append((0, 0, {
+                'partner_id': partner_id
+            }))
+        
+        # Create new channel
         channel_vals = {
             'name': desired_name,
             'whatsapp_number': data.contact_phone,
             'channel_type': 'whatsapp',
             'wa_account_id': settings.WHATSAPP_ACCOUNT_ID,
             'description': 'Created via n8n API',
-            'channel_member_ids': [(0, 0, {'partner_id': settings.BOT_PARTNER_ID})]
+            'channel_member_ids': channel_member_ids
         }
         channel_id = odoo.create('discuss.channel', channel_vals)
 

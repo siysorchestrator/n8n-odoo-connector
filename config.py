@@ -22,4 +22,8 @@ class Settings:
     BOT_PARTNER_ID = os.getenv("BOT_PARTNER_ID")
     WHATSAPP_ACCOUNT_ID = os.getenv("ODOO_WHATSAPP_ID")
 
+    DEFAULT_CHANNEL_MEMBERS = [
+        50,  # Carlo
+        30,  # Diana
+    ]
 settings = Settings()
