@@ -239,179 +239,92 @@ def log_message_endpoint(data: OdooMessageCreate):
 # ============= CHAT CHANNELS ==============
 # ==========================================
 
-@router.get("/chat_channels/by_member/{partner_id}")
-def get_channels_by_member(partner_id: int, limit: int = 20):
-    """
-    Obtener canales donde un partner específico es miembro
-    
-    Args:
-        partner_id: ID del partner/res.partner a buscar
-        limit: Límite de resultados
-    """
+@router.get("/users")
+def list_users(limit: int = 50):
+    """Listar usuarios de Odoo"""
     try:
-        print(f"[DEBUG] get_channels_by_member llamado: partner_id={partner_id}, limit={limit}")
-        
-        # Primero verificar si el partner existe
-        try:
-            partner = odoo.read("res.partner", [partner_id], ["id", "name"])
-            if not partner:
-                raise HTTPException(status_code=404, detail=f"Partner con ID {partner_id} no encontrado")
-            print(f"[DEBUG] Partner encontrado: {partner[0]['name']}")
-        except Exception as e:
-            print(f"[DEBUG] Error al buscar partner: {str(e)}")
-            raise HTTPException(status_code=404, detail=f"Partner con ID {partner_id} no encontrado")
-        
-        # Buscar canales de tipo chat (WhatsApp sería un tipo específico o chat general)
-        # Usamos un límite mayor inicial y filtramos después
-        all_channels = odoo.search_read(
-            "discuss.channel", 
-            [('channel_type', '=', 'chat')],  # Solo canales de tipo chat
-            ["id", "name", "channel_type", "description", "channel_partner_ids", "uuid"],
-            limit=limit * 3  # Buscamos más inicialmente
+        users = odoo.search_read(
+            "res.users",
+            [],
+            ["id", "name", "login", "partner_id", "active"],
+            limit=limit
         )
+        return {"count": len(users), "users": users}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@router.get("/chat_channels/{channel_id}/members")
+def get_channel_members(channel_id: int):
+    """Obtener todos los miembros de un canal"""
+    try:
+        channel = odoo.read("discuss.channel", [channel_id], 
+                           ["id", "name", "channel_partner_ids"])
+        if not channel:
+            return {"status": "error", "message": f"Canal {channel_id} no encontrado"}
         
-        print(f"[DEBUG] Canales encontrados inicialmente: {len(all_channels)}")
+        partner_ids = channel[0].get('channel_partner_ids', [])
+        members = []
         
-        # Filtrar canales donde el partner está presente
-        filtered_channels = []
-        for channel in all_channels:
-            member_partner_ids = channel.get("channel_partner_ids", [])
-            
-            if partner_id in member_partner_ids:
-                filtered_channels.append({
-                    "id": channel["id"],
-                    "name": channel["name"],
-                    "channel_type": channel["channel_type"],
-                    "description": channel.get("description", ""),
-                    "uuid": channel.get("uuid", ""),
-                    "member_count": len(member_partner_ids)
+        if partner_ids:
+            partners = odoo.read("res.partner", partner_ids, 
+                                ["id", "name", "email", "phone"])
+            for partner in partners:
+                users = odoo.search_read(
+                    "res.users",
+                    [('partner_id', '=', partner['id'])],
+                    ["id", "name", "login"],
+                    limit=1
+                )
+                user_info = users[0] if users else None
+                members.append({
+                    "partner_id": partner['id'],
+                    "partner_name": partner.get('name'),
+                    "user_id": user_info['id'] if user_info else None,
+                    "user_name": user_info.get('name') if user_info else None
                 })
-        
-        print(f"[DEBUG] Canales filtrados donde el partner es miembro: {len(filtered_channels)}")
         
         return {
-            "partner_id": partner_id,
-            "partner_name": partner[0]['name'] if partner else "Desconocido",
-            "count": len(filtered_channels),
-            "channels": filtered_channels[:limit]
-        }
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"[DEBUG] Error in get_channels_by_member: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=400, detail=str(e))
-
-@router.post("/chat_channels/{channel_id}/add_users")
-def add_users_to_channel(
-    channel_id: int,
-    user_ids: List[int] = Query(..., description="IDs de usuarios (res.users) a agregar")
-):
-    """
-    Agregar usuarios específicos a un canal existente
-    
-    Args:
-        channel_id: ID del canal existente
-        user_ids: Lista de IDs de usuarios (res.users) a agregar
-    """
-    try:
-        print(f"[DEBUG] add_users_to_channel llamado: channel_id={channel_id}, user_ids={user_ids}")
-        
-        # 1. Verificar que el canal existe
-        channel = odoo.read("discuss.channel", [channel_id], ["id", "name", "channel_partner_ids"])
-        if not channel:
-            raise HTTPException(status_code=404, detail=f"Canal con ID {channel_id} no encontrado")
-        
-        channel_name = channel[0].get('name', f'Canal {channel_id}')
-        current_partner_ids = channel[0].get('channel_partner_ids', [])
-        print(f"[DEBUG] Canal encontrado: {channel_name}, miembros actuales: {len(current_partner_ids)}")
-        
-        # 2. Obtener los partner IDs de los usuarios
-        print(f"[DEBUG] Obteniendo partners para usuarios: {user_ids}")
-        users = odoo.read("res.users", user_ids, ["partner_id", "name"])
-        
-        partner_ids_to_add = []
-        user_info = []
-        for user in users:
-            if user and 'partner_id' in user and user['partner_id']:
-                partner_id = user['partner_id'][0]
-                user_name = user.get('name', f'Usuario {user["id"]}')
-                partner_ids_to_add.append(partner_id)
-                user_info.append({
-                    "user_id": user["id"],
-                    "user_name": user_name,
-                    "partner_id": partner_id
-                })
-        
-        if not partner_ids_to_add:
-            raise HTTPException(status_code=400, detail="No se encontraron partners para los usuarios especificados")
-        
-        print(f"[DEBUG] Partners a agregar: {partner_ids_to_add}")
-        print(f"[DEBUG] Info usuarios: {user_info}")
-        
-        # 3. Filtrar partners que ya están en el canal
-        new_partner_ids = [pid for pid in partner_ids_to_add if pid not in current_partner_ids]
-        
-        if not new_partner_ids:
-            return {
-                "status": "info",
-                "message": "Todos los usuarios ya son miembros del canal",
-                "channel_id": channel_id,
-                "channel_name": channel_name,
-                "added_count": 0,
-                "already_members": [info for info in user_info if info["partner_id"] in current_partner_ids]
-            }
-        
-        print(f"[DEBUG] Nuevos partners a agregar: {new_partner_ids}")
-        
-        # 4. Agregar cada partner al canal
-        successfully_added = []
-        failed_to_add = []
-        
-        for partner_id in new_partner_ids:
-            try:
-                # Usar (4, id, 0) para agregar a la lista de muchos-a-muchos
-                odoo.write("discuss.channel", [channel_id], {
-                    'channel_partner_ids': [(4, partner_id, 0)]
-                })
-                successfully_added.append(partner_id)
-                print(f"[DEBUG] Partner {partner_id} agregado exitosamente")
-            except Exception as e:
-                print(f"[DEBUG] Error al agregar partner {partner_id}: {str(e)}")
-                failed_to_add.append({
-                    "partner_id": partner_id,
-                    "error": str(e)
-                })
-        
-        # 5. Preparar respuesta
-        added_user_info = []
-        for info in user_info:
-            if info["partner_id"] in successfully_added:
-                added_user_info.append(info)
-        
-        response = {
-            "status": "success" if successfully_added else "partial",
-            "message": f"Se agregaron {len(successfully_added)} de {len(new_partner_ids)} usuarios al canal",
+            "status": "success",
             "channel_id": channel_id,
-            "channel_name": channel_name,
-            "added_count": len(successfully_added),
-            "added_users": added_user_info,
-            "total_members_now": len(current_partner_ids) + len(successfully_added)
+            "channel_name": channel[0].get('name'),
+            "member_count": len(members),
+            "members": members
         }
-        
-        if failed_to_add:
-            response["failed_to_add"] = failed_to_add
-            response["failed_count"] = len(failed_to_add)
-        
-        print(f"[DEBUG] Respuesta final: {response}")
-        return response
-        
-    except HTTPException:
-        raise
     except Exception as e:
-        print(f"[DEBUG] Error in add_users_to_channel: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Error al agregar usuarios al canal: {str(e)}")
+        return {"status": "error", "message": str(e)}
+
+@router.get("/chat_channels/{channel_id}/available_users")
+def get_available_users_to_add(channel_id: int, limit: int = 20):
+    """Mostrar usuarios que NO son miembros del canal"""
+    try:
+        channel = odoo.read("discuss.channel", [channel_id], 
+                           ["channel_partner_ids"])
+        if not channel:
+            return {"status": "error", "message": f"Canal {channel_id} no encontrado"}
+        
+        current_partner_ids = channel[0].get('channel_partner_ids', [])
+        all_users = odoo.search_read(
+            "res.users",
+            [('active', '=', True)],
+            ["id", "name", "login", "partner_id"],
+            limit=limit
+        )
+        
+        available_users = []
+        for user in all_users:
+            if user.get('partner_id') and user['partner_id'][0] not in current_partner_ids:
+                available_users.append({
+                    "user_id": user['id'],
+                    "user_name": user.get('name'),
+                    "user_login": user.get('login'),
+                    "partner_id": user['partner_id'][0]
+                })
+        
+        return {
+            "status": "success",
+            "channel_id": channel_id,
+            "available_count": len(available_users),
+            "available_users": available_users
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
