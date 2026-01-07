@@ -38,7 +38,11 @@ def handle_incoming_n8n_message(data):
             'channel_type': 'whatsapp',
             'wa_account_id': settings.WHATSAPP_ACCOUNT_ID,
             'description': 'Created via n8n API',
-            'channel_member_ids': [(0, 0, {'partner_id': settings.BOT_PARTNER_ID})]
+            'channel_member_ids': [
+                (0, 0, {'partner_id': settings.BOT_PARTNER_ID}),
+                (0, 0, {'partner_id': settings.EXTRA_USER_ID_1}), # Usuario Extra 1
+                (0, 0, {'partner_id': settings.EXTRA_USER_ID_2})  # Usuario Extra 2
+            ]
         }
         channel_id = odoo.create('discuss.channel', channel_vals)
 

@@ -22,4 +22,7 @@ class Settings:
     BOT_PARTNER_ID = 3
     WHATSAPP_ACCOUNT_ID = 2
 
+    EXTRA_USER_ID_1 = 30 # Diana
+    EXTRA_USER_ID_2 = 50 # Carlo
+
 settings = Settings()
