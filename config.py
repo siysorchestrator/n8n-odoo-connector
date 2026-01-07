@@ -29,4 +29,8 @@ class Settings:
         30,  # Diana
     ]
 
+    DEFAULT_CHANNEL_MEMBERS = [
+        50,  # Carlo
+        30,  # Diana
+    ]
 settings = Settings()

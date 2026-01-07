@@ -4,11 +4,10 @@ from services.odoo_service import odoo, handle_incoming_n8n_message
 from dependencies import verify_api_key
 from models.models import (
     PartnerCreate, PartnerUpdate, 
-    PreOrderCreate, 
     SaleCreate, 
     RepairCreate, RepairUpdate, 
     EquipoCreate, EquipoUpdate, 
-    OdooMessageCreate, TicketCreate
+    OdooMessageCreate, TicketCreate, ChatChannelNameUpdate
 )
 
 # We protect all routes in this router with the API Key
@@ -46,23 +45,6 @@ def update_partner(partner_id: int, data: PartnerUpdate):
     # exclude_unset=True ensures we only send fields that were actually included in the JSON
     odoo.write("res.partner", [partner_id], data.model_dump(exclude_unset=True))
     return {"updated": partner_id}
-
-# ==========================================
-# ============== PRE-ORDENES ===============
-# ==========================================
-
-@router.get("/preorder/{preorder_id}")
-def get_preorder(preorder_id: int):
-    return odoo.read(
-        "x_pre_orden",
-        [preorder_id],
-        ["id", "x_name", "x_studio_cliente", "x_studio_tipo_de_servicio", "x_studio_marca_equipo", "x_studio_modelo_equipo", "x_studio_serie_equipo", "x_studio_descripcion_de_servicio"]
-    )
-
-@router.post("/preorder")
-def create_preorder(data: PreOrderCreate):
-    order_id = odoo.create("x_pre_orden", data.model_dump())
-    return {"order_id": order_id}
 
 # ==========================================
 # ================ TICKETS =================
