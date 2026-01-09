@@ -27,7 +27,7 @@ def handle_incoming_n8n_message(data):
             # Update name if needed
             odoo.write('discuss.channel', [channel_id], {'name': desired_name})
     else:
-        # Create new
+        # Create new channel with BOT_PARTNER_ID and additional users
         channel_vals = {
             'whatsapp_number': data.contact_phone,
             'channel_type': 'whatsapp',
@@ -35,7 +35,7 @@ def handle_incoming_n8n_message(data):
             'description': 'Created via n8n API',
             'channel_member_ids': [
                 (0, 0, {'partner_id': settings.BOT_PARTNER_ID}),
-                (0, 0, {'partner_id': settings.EXTRA_USER_ID_1}), 
+                (0, 0, {'partner_id': settings.EXTRA_USER_ID_1}),
                 (0, 0, {'partner_id': settings.EXTRA_USER_ID_2})
             ]
         }
