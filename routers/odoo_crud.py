@@ -234,4 +234,61 @@ def log_message_endpoint(data: OdooMessageCreate):
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
-    
+
+# ==========================================
+# ================ LABEL ===================
+# ==========================================   
+
+@router.put("/label/{label_name}")
+def add_label(label_name: str, ticket_id: int = Query(..., description="ID del ticket")):
+    try:
+        existing_labels = odoo.search_read(
+            "helpdesk.ticket.tag",
+            [("name", "=", label_name)],
+            ["id", "name"]
+        )
+        
+        if existing_labels:
+            tag_id = existing_labels[0]["id"]
+        else:
+            tag_id = odoo.create("helpdesk.ticket.tag", {
+                "name": label_name
+            })
+        
+        ticket_data = odoo.read(
+            "helpdesk.ticket",
+            [ticket_id],
+            ["tag_ids"]
+        )
+        
+        if not ticket_data:
+            raise HTTPException(status_code=404, detail=f"Ticket con ID {ticket_id} no encontrado")
+        
+        current_tags = ticket_data[0].get("tag_ids", []) or []
+        if tag_id in current_tags:
+            return {
+                "message": f"La etiqueta '{label_name}' ya estaba asignada al ticket",
+                "ticket_id": ticket_id,
+                "tag_id": tag_id,
+                "status": "already_assigned"
+            }
+
+        new_tags = current_tags + [tag_id]
+        
+        odoo.write("helpdesk.ticket", [ticket_id], {
+            "tag_ids": [(6, 0, new_tags)]  
+        })
+        
+        return {
+            "message": f"Etiqueta '{label_name}' agregada exitosamente al ticket {ticket_id}",
+            "ticket_id": ticket_id,
+            "tag_id": tag_id,
+            "status": "success"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error al agregar etiqueta: {str(e)}")
