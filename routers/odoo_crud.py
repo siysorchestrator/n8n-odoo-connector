@@ -246,7 +246,7 @@ def add_label(label_name: str, ticket_id: int = Query(..., description="ID del t
         print(f"DEBUG: Agregando etiqueta '{label_name}' al ticket {ticket_id}")
         
         existing_labels = odoo.search_read(
-            "helpdesk.ticket.tag",
+            "helpdesk.tag",
             [("name", "=", label_name)],
             ["id", "name"]
         )
@@ -257,7 +257,7 @@ def add_label(label_name: str, ticket_id: int = Query(..., description="ID del t
             print(f"DEBUG: Usando etiqueta existente con ID: {tag_id}")
         else:
             print(f"DEBUG: Creando nueva etiqueta: {label_name}")
-            tag_id = odoo.create("helpdesk.ticket.tag", {
+            tag_id = odoo.create("helpdesk.tag", {
                 "name": label_name
             })
             print(f"DEBUG: Nueva etiqueta creada con ID: {tag_id}")
