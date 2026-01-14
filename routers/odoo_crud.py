@@ -241,30 +241,51 @@ def log_message_endpoint(data: OdooMessageCreate):
 
 @router.put("/label/{label_name}")
 def add_label(label_name: str, ticket_id: int = Query(..., description="ID del ticket")):
+    
     try:
+        print(f"DEBUG: Agregando etiqueta '{label_name}' al ticket {ticket_id}")
+        
         existing_labels = odoo.search_read(
             "helpdesk.ticket.tag",
             [("name", "=", label_name)],
             ["id", "name"]
         )
+        print(f"DEBUG: Etiquetas existentes encontradas: {existing_labels}")
         
         if existing_labels:
             tag_id = existing_labels[0]["id"]
+            print(f"DEBUG: Usando etiqueta existente con ID: {tag_id}")
         else:
+            print(f"DEBUG: Creando nueva etiqueta: {label_name}")
             tag_id = odoo.create("helpdesk.ticket.tag", {
                 "name": label_name
             })
+            print(f"DEBUG: Nueva etiqueta creada con ID: {tag_id}")
         
         ticket_data = odoo.read(
             "helpdesk.ticket",
             [ticket_id],
-            ["tag_ids"]
+            ["tag_ids", "name"]
         )
+        print(f"DEBUG: Datos del ticket: {ticket_data}")
         
         if not ticket_data:
             raise HTTPException(status_code=404, detail=f"Ticket con ID {ticket_id} no encontrado")
+
+        current_tags = ticket_data[0].get("tag_ids")
+        print(f"DEBUG: Etiquetas actuales del ticket: {current_tags}")
+
+        if current_tags is None:
+            current_tags = []
+
+        if isinstance(current_tags, bool):
+            current_tags = []
+
+        if isinstance(current_tags, list):
+            current_tags = [int(tag) for tag in current_tags if tag is not None]
         
-        current_tags = ticket_data[0].get("tag_ids", []) or []
+        print(f"DEBUG: Etiquetas procesadas: {current_tags}")
+
         if tag_id in current_tags:
             return {
                 "message": f"La etiqueta '{label_name}' ya estaba asignada al ticket",
@@ -274,10 +295,14 @@ def add_label(label_name: str, ticket_id: int = Query(..., description="ID del t
             }
 
         new_tags = current_tags + [tag_id]
+        print(f"DEBUG: Nuevas etiquetas a asignar: {new_tags}")
+
+        update_data = {
+            "tag_ids": [(6, 0, new_tags)]
+        }
+        print(f"DEBUG: Datos a enviar a Odoo: {update_data}")
         
-        odoo.write("helpdesk.ticket", [ticket_id], {
-            "tag_ids": [(6, 0, new_tags)]  
-        })
+        odoo.write("helpdesk.ticket", [ticket_id], update_data)
         
         return {
             "message": f"Etiqueta '{label_name}' agregada exitosamente al ticket {ticket_id}",
@@ -290,5 +315,6 @@ def add_label(label_name: str, ticket_id: int = Query(..., description="ID del t
         raise
     except Exception as e:
         import traceback
+        print(f"ERROR DETALLADO:")
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Error al agregar etiqueta: {str(e)}")
