@@ -1,8 +1,6 @@
 from models.odoo_client import OdooClient
 from config import settings
 
-# Initialize globally or per request depending on OdooClient thread safety. 
-# Usually global is fine for xmlrpc.
 odoo = OdooClient(
     url=settings.ODOO_URL,
     db=settings.ODOO_DB,
@@ -11,11 +9,8 @@ odoo = OdooClient(
 )
 
 def handle_incoming_n8n_message(data):
-    """
-    Business logic to log message into Odoo Discuss Channel.
-    """
     # 1. Search Partner
-    partner_domain = [('phone_sanitized', '=', data.contact_phone)]
+    partner_domain = [('phone_sanitized', '=', '+' + data.contact_phone)]
     partner_data = odoo.search_read("res.partner", partner_domain, ["name"], limit=1)
     partner_name = partner_data[0]['name'] if partner_data else None
 
@@ -32,16 +27,14 @@ def handle_incoming_n8n_message(data):
             # Update name if needed
             odoo.write('discuss.channel', [channel_id], {'name': desired_name})
     else:
-        # Create new
+        # Create new channel with BOT_PARTNER_ID and additional users
         channel_vals = {
             'whatsapp_number': data.contact_phone,
             'channel_type': 'whatsapp',
             'wa_account_id': settings.WHATSAPP_ACCOUNT_ID,
             'description': 'Created via n8n API',
             'channel_member_ids': [
-                (0, 0, {'partner_id': settings.BOT_PARTNER_ID}),
-                (0, 0, {'partner_id': settings.EXTRA_USER_ID_1}), # Usuario Extra 1
-                (0, 0, {'partner_id': settings.EXTRA_USER_ID_2})  # Usuario Extra 2
+                (0, 0, {'partner_id': settings.BOT_PARTNER_ID})
             ]
         }
         channel_id = odoo.create('discuss.channel', channel_vals)

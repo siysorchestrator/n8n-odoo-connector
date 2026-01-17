@@ -18,9 +18,9 @@ class Settings:
     ODOO_WEBHOOK_URL = os.getenv("ODOO_WEBHOOK_URL")
     WHATSAPP_VERIFY_TOKEN = os.getenv("WHATSAPP_VERIFY_TOKEN")
 
-    # Constants / IDs
-    BOT_PARTNER_ID = 3
-    WHATSAPP_ACCOUNT_ID = 2
+    # Constants
+    BOT_PARTNER_ID = int(os.getenv("BOT_PARTNER_ID", 0))
+    WHATSAPP_ACCOUNT_ID = int(os.getenv("ODOO_WHATSAPP_ID", 0))
 
     EXTRA_USER_ID_1 = 30 # Diana
     EXTRA_USER_ID_2 = 50 # Carlo

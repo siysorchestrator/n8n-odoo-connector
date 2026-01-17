@@ -6,9 +6,15 @@ class OdooClient:
         self.db = db
         self.username = username
         self.password = password
-        self.common = xmlrpc.client.ServerProxy(f"{url}/xmlrpc/2/common")
+        self.common = xmlrpc.client.ServerProxy(
+            f"{url}/xmlrpc/2/common", 
+            allow_none=True
+        )
         self.uid = self.common.authenticate(db, username, password, {})
-        self.models = xmlrpc.client.ServerProxy(f"{url}/xmlrpc/2/object")
+        self.models = xmlrpc.client.ServerProxy(
+            f"{url}/xmlrpc/2/object",
+            allow_none=True
+        )
 
     # Generic search_read
     def search_read(self, model, domain=None, fields=None, limit=None):
