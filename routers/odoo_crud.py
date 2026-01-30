@@ -53,14 +53,14 @@ def update_partner(partner_id: int, data: PartnerUpdate):
 
 def is_employee_user(partner_id):
     try:
-        user_ids = odoo.search("res.users", [["partner_id", "=", partner_id]])
+        user_ids = odoo.search_read("res.users", [["partner_id", "=", partner_id]])
         
         if not user_ids:
             return False
         
         user = odoo.read("res.users", [user_ids[0]], ["groups_id", "share"])[0]
         
-        internal_group_ids = odoo.search("res.groups", [
+        internal_group_ids = odoo.search_read("res.groups", [
             ["name", "=", "base.group_user"]
         ])
         
