@@ -42,9 +42,39 @@ def create_partner(data: PartnerCreate):
 
 @router.put("/partners/{partner_id}")
 def update_partner(partner_id: int, data: PartnerUpdate):
-    # exclude_unset=True ensures we only send fields that were actually included in the JSON
+    if is_employee_user(partner_id):
+        raise HTTPException(
+            status_code=403,
+            detail=f"No se puede actualizar el partner {partner_id} porque es un empleado (usuario del sistema)."
+        )
+    
     odoo.write("res.partner", [partner_id], data.model_dump(exclude_unset=True))
-    return {"updated": partner_id}
+    return {"updated": partner_id, "message": "Partner actualizado exitosamente"}
+
+def is_employee_user(partner_id):
+    try:
+        user_ids = odoo.search("res.users", [["partner_id", "=", partner_id]])
+        
+        if not user_ids:
+            return False
+        
+        user = odoo.read("res.users", [user_ids[0]], ["groups_id", "share"])[0]
+        
+        internal_group_ids = odoo.search("res.groups", [
+            ["name", "=", "base.group_user"]
+        ])
+        
+        if not internal_group_ids:
+            return True
+        
+        is_internal = internal_group_ids[0] in user.get("groups_id", [])
+        is_not_portal = not user.get("share", False)
+        
+        return is_internal or is_not_portal
+        
+    except Exception as e:
+        print(f"Error verificando si es empleado: {str(e)}")
+        return False
 
 # ==========================================
 # ================ TICKETS =================
