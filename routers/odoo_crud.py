@@ -1,5 +1,7 @@
 from fastapi import APIRouter, Depends, Query, HTTPException
 from typing import List
+import xmlrpc.client
+
 from services.odoo_service import odoo, handle_incoming_n8n_message
 from dependencies import verify_api_key
 from models.models import (
@@ -42,39 +44,38 @@ def create_partner(data: PartnerCreate):
 
 @router.put("/partners/{partner_id}")
 def update_partner(partner_id: int, data: PartnerUpdate):
-    if is_employee_user(partner_id):
-        raise HTTPException(
-            status_code=403,
-            detail=f"No se puede actualizar el partner {partner_id} porque es un empleado (usuario del sistema)."
-        )
+    """
+    Solución simple y efectiva:
+    1. Intentar actualizar
+    2. Si falla por error de empleado, devolver error claro
+    3. Si es otro error, relanzar
+    """
     
-    odoo.write("res.partner", [partner_id], data.model_dump(exclude_unset=True))
-    return {"updated": partner_id, "message": "Partner actualizado exitosamente"}
-
-def is_employee_user(partner_id):
     try:
-        user_ids = odoo.search_read("res.users", [["partner_id", "=", partner_id]])
+        odoo.write("res.partner", [partner_id], data.model_dump(exclude_unset=True))
+        return {"updated": partner_id}
         
-        if not user_ids:
-            return False
-        
-        user = odoo.read("res.users", [user_ids[0]], ["groups_id", "share"])[0]
-        
-        internal_group_ids = odoo.search_read("res.groups", [
-            ["name", "=", "base.group_user"]
-        ])
-        
-        if not internal_group_ids:
-            return True
-        
-        is_internal = internal_group_ids[0] in user.get("groups_id", [])
-        is_not_portal = not user.get("share", False)
-        
-        return is_internal or is_not_portal
-        
-    except Exception as e:
-        print(f"Error verificando si es empleado: {str(e)}")
-        return False
+    except xmlrpc.client.Fault as e:
+        # Verificar si es el error de "No puede modificar registros 'User'"
+        if "No puede modificar registros 'User'" in str(e):
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "error": "employee_update_not_allowed",
+                    "partner_id": partner_id,
+                    "message": "Este registro corresponde a un empleado. Los empleados no pueden ser actualizados a través de esta API.",
+                    "solution": "Para modificar datos de empleados, contacte al departamento de RRHH o use el módulo correspondiente."
+                }
+            )
+        else:
+            # Para otros errores, devolver error genérico
+            raise HTTPException(
+                status_code=500,
+                detail={
+                    "error": "odoo_error",
+                    "message": str(e)
+                }
+            )
 
 # ==========================================
 # ================ TICKETS =================
