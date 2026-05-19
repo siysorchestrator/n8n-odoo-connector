@@ -354,18 +354,18 @@ def add_label(label_name: str, ticket_id: int = Query(..., description="ID del t
 # ============= LICITACION =================
 # ========================================== 
 
-@router.get("/verificar-inventario/{variable_ejemplo}")
-async def verificar_existencia_inventario(variable_ejemplo: str):
+@router.get("/verificar-inventario/{no_inventario}")
+async def verificar_existencia_inventario(no_inventario: str):
     """
-    Verifica si 'variable_ejemplo' existe en el campo 'x_inventario'
+    Verifica si 'no_inventario' existe en el campo 'x_inventario'
     del modelo 'x_licitaciones_act_issste'.
     - Si existe: retorna 200 con mensaje.
     - Si no existe: retorna 404 y detiene el proceso.
     """
     try:
-        licitacion_ids = odoo.search(
+        licitacion_ids = odoo.search_read(
             'x_licitaciones_act_issste',
-            [('x_inventario', '=', variable_ejemplo)]
+            [('x_inventario', '=', no_inventario)]
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error en Odoo: {str(e)}")
@@ -373,12 +373,12 @@ async def verificar_existencia_inventario(variable_ejemplo: str):
     if not licitacion_ids:
         raise HTTPException(
             status_code=404,
-            detail=f"No existe licitación con x_inventario = '{variable_ejemplo}'. Proceso detenido."
+            detail=f"No existe licitación con x_inventario = '{no_inventario}'. Proceso detenido."
         )
 
     return {
         "exists": True,
-        "message": f"El valor '{variable_ejemplo}' existe.",
+        "message": f"El valor '{no_inventario}' existe.",
         "licitacion_id": licitacion_ids[0]
     }
 
