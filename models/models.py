@@ -80,3 +80,14 @@ class OdooMessageCreate(BaseModel):
 # --- Canales de chat ---
 class ChatChannelNameUpdate(BaseModel):
     name: str
+
+# --- Ticket de licitación ---
+class LicitacionCreate(BaseModel):
+    x_tipo_servicio: Optional[str]
+    x_studio_stage_id: Optional[int] = 1
+    x_studio_equipo: Optional[int] = 4
+
+class LicitacionUpdate(BaseModel):
+    x_tipo_servicio: Optional[str]
+    x_studio_stage_id: Optional[int] = 1
+    x_studio_equipo: Optional[int] = 4

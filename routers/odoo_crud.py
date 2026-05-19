@@ -9,7 +9,7 @@ from models.models import (
     SaleCreate, 
     RepairCreate, RepairUpdate, 
     EquipoCreate, EquipoUpdate, 
-    OdooMessageCreate, TicketCreate, ChatChannelNameUpdate
+    OdooMessageCreate, TicketCreate, LicitacionCreate
 )
 
 # We protect all routes in this router with the API Key
@@ -349,3 +349,49 @@ def add_label(label_name: str, ticket_id: int = Query(..., description="ID del t
         print(f"ERROR DETALLADO:")
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Error al agregar etiqueta: {str(e)}")
+    
+# ==========================================
+# ============= LICITACION =================
+# ========================================== 
+
+@router.get("/verificar-inventario/{variable_ejemplo}")
+async def verificar_existencia_inventario(variable_ejemplo: str):
+    """
+    Verifica si 'variable_ejemplo' existe en el campo 'x_inventario'
+    del modelo 'x_licitaciones_act_issste'.
+    - Si existe: retorna 200 con mensaje.
+    - Si no existe: retorna 404 y detiene el proceso.
+    """
+    try:
+        licitacion_ids = odoo.search(
+            'x_licitaciones_act_issste',
+            [('x_inventario', '=', variable_ejemplo)]
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error en Odoo: {str(e)}")
+
+    if not licitacion_ids:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No existe licitación con x_inventario = '{variable_ejemplo}'. Proceso detenido."
+        )
+
+    return {
+        "exists": True,
+        "message": f"El valor '{variable_ejemplo}' existe.",
+        "licitacion_id": licitacion_ids[0]
+    }
+
+@router.post("/crear-contrato")
+async def crear_contrato(contrato_data: LicitacionCreate):
+    """
+    Crea un registro en 'x_contratos_issste' usando los datos del modelo.
+    No realiza ninguna verificación previa (asume que ya se hizo).
+    """
+    try:
+        contrato_vals = contrato_data.dict(exclude_unset=True)
+        nuevo_id = odoo.create('x_contratos_issste', contrato_vals)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al crear: {str(e)}")
+
+    return {"success": True, "contrato_id": nuevo_id}
