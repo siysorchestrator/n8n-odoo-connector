@@ -83,10 +83,10 @@ class ChatChannelNameUpdate(BaseModel):
 
 # --- Ticket de licitación ---
 class LicitacionCreate(BaseModel):
-    x_tipo_servicio: Optional[str]
+    x_tipo_servicio: Optional[str] = None
     x_studio_stage_id: Optional[int] = 1
     x_studio_equipo: Optional[int] = 4
-    x_studio_activo: Optional[int]
+    x_studio_activo: Optional[int] = None
 
 class LicitacionUpdate(BaseModel):
     x_tipo_servicio: Optional[str]

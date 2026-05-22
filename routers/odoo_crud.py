@@ -379,7 +379,7 @@ async def verificar_existencia_inventario(no_inventario: str):
 @router.post("/crear-contrato/{activo_id}")
 async def crear_contrato(
     activo_id: int,
-    contrato_data: LicitacionCreate  # Sin Body(None), obligatorio
+    contrato_data: LicitacionCreate
 ):
     contrato_vals = contrato_data.dict(exclude_unset=True)
     contrato_vals['x_studio_activo'] = activo_id
