@@ -379,11 +379,14 @@ async def verificar_existencia_inventario(no_inventario: str):
 @router.post("/crear-contrato/{activo_id}")
 async def crear_contrato(
     activo_id: int,
-    contrato_data: LicitacionCreate
+    contrato_data: Optional[LicitacionCreate] = Body(None)  # Importante: Body(None) hace el body opcional
 ):
+    # Si el body no se envió, inicializa un diccionario vacío
+    contrato_vals = contrato_data.dict(exclude_unset=True) if contrato_data else {}
+    contrato_vals['x_studio_activo'] = activo_id
+    
+    nuevo_id = None
     try:
-        contrato_vals = contrato_data.dict(exclude_unset=True)
-        contrato_vals['x_studio_activo'] = activo_id
         nuevo_id = odoo.create('x_contratos_issste', contrato_vals)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al crear: {str(e)}")
