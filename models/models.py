@@ -86,6 +86,7 @@ class LicitacionCreate(BaseModel):
     x_tipo_servicio: Optional[str]
     x_studio_stage_id: Optional[int] = 1
     x_studio_equipo: Optional[int] = 4
+    x_studio_activo: Optional[int]
 
 class LicitacionUpdate(BaseModel):
     x_tipo_servicio: Optional[str]

@@ -356,12 +356,6 @@ def add_label(label_name: str, ticket_id: int = Query(..., description="ID del t
 
 @router.get("/verificar-inventario/{no_inventario}")
 async def verificar_existencia_inventario(no_inventario: str):
-    """
-    Verifica si 'no_inventario' existe en el campo 'x_inventario'
-    del modelo 'x_licitaciones_act_issste'.
-    - Si existe: retorna 200 con mensaje.
-    - Si no existe: retorna 404 y detiene el proceso.
-    """
     try:
         licitacion_ids = odoo.search_read(
             'x_licitaciones_act_issste',
@@ -382,14 +376,14 @@ async def verificar_existencia_inventario(no_inventario: str):
         "licitacion_id": licitacion_ids[0]
     }
 
-@router.post("/crear-contrato")
-async def crear_contrato(contrato_data: LicitacionCreate):
-    """
-    Crea un registro en 'x_contratos_issste' usando los datos del modelo.
-    No realiza ninguna verificación previa (asume que ya se hizo).
-    """
+@router.post("/crear-contrato/{activo_id}")
+async def crear_contrato(
+    activo_id: int,
+    contrato_data: LicitacionCreate
+):
     try:
         contrato_vals = contrato_data.dict(exclude_unset=True)
+        contrato_vals['x_studio_activo'] = activo_id
         nuevo_id = odoo.create('x_contratos_issste', contrato_vals)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al crear: {str(e)}")
