@@ -37,6 +37,7 @@ def handle_incoming_n8n_message(data):
                 (0, 0, {'partner_id': settings.BOT_PARTNER_ID})
             ]
         }
+        print(f"Creating channel with values: {channel_vals}")
         channel_id = odoo.create('discuss.channel', channel_vals)
 
     # 4. Post Message
