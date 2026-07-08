@@ -32,8 +32,7 @@ class TicketCreate(BaseModel):
     priority: Optional[str] = None  
     partner_phone: Optional[str] = None
     description: Optional[str] = None
-    team_id: int  
-    ticket_type_id: Optional[int] = None 
+    team_id: int
 
 # --- Sales Quote ---
 class SaleCreate(BaseModel):
