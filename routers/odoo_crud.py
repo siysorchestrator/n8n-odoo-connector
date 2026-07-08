@@ -83,7 +83,7 @@ def update_partner(partner_id: int, data: PartnerUpdate):
 
 @router.post("/ticket")
 def create_ticket(data: TicketCreate):
-    tick_id = odoo.create("helpdesk.ticket", data.model_dump())
+    tick_id = odoo.create("helpdesk.ticket", data.model_dump(exclude_unset=True))
     return {"ticket_id": tick_id}
 
 @router.get("/ticket/{tick_id}")

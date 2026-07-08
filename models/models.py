@@ -28,10 +28,12 @@ class PartnerUpdate(BaseModel):
 # --- Ticket de soporte ---
 class TicketCreate(BaseModel):
     name: str
-    partner_id: Optional[int]
-    priority: Optional[int]
-    partner_phone: Optional[str]
-    description: Optional[str]
+    partner_id: Optional[int] = None
+    priority: Optional[str] = None  
+    partner_phone: Optional[str] = None
+    description: Optional[str] = None
+    team_id: int  
+    ticket_type_id: Optional[int] = None 
 
 # --- Sales Quote ---
 class SaleCreate(BaseModel):
